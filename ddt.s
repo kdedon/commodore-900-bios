@@ -1403,16 +1403,16 @@ bpswitch:
 	add	r3, r3
 	ldl	rr2, bptab(r3)
 	jp	@rr2
-	.word	0x0063
-	.word	0x0064
+	.word	'c
+	.word	'd
 / bptab -- bc/bd/br/bs handler address table (raw .long targets).
 bptab:
-	.word	0x0072
-	.word	0x0073
-	.long	0x00002f52
-	.long	0x00002f80
-	.long	0x00003140
-	.long	0x0000303e
+	.word	'r
+	.word	's
+	.long	bpclear
+	.long	bpdisp
+	.long	bpremove
+	.long	bpset
 / resume -- 'c': plant 0x0e00 breakpoint opcodes at the active bp
 / addrs, restore saved FCW (splx), exit through dbgret -> trap stub IRET.
 resume:
@@ -1962,40 +1962,40 @@ dispatch:
 	add	r3, r3
 	ldl	rr2, cmdtab(r3)
 	jp	@rr2
-	.word	0x003f
-	.word	0x004d
-	.word	0x0052
-	.word	0x0053
-	.word	0x0061
-	.word	0x0062
-	.word	0x0063
-	.word	0x0065
-	.word	0x0066
-	.word	0x0068
-	.word	0x0069
-	.word	0x006d
-	.word	0x006f
-	.word	0x0072
-/ cmdtab -- command handler address table (raw .long targets).
+	.word	'?
+	.word	'M
+	.word	'R
+	.word	'S
+	.word	'a
+	.word	'b
+	.word	'c
+	.word	'e
+	.word	'f
+	.word	'h
+	.word	'i
+	.word	'm
+	.word	'o
+	.word	'r
+/ cmdtab -- command handler address table, one entry per letter above.
 cmdtab:
-	.word	0x0073
-	.word	0x0074
-	.long	0x00003516
-	.long	0x000038b0
-	.long	0x00003254
-	.long	0x00002eca
-	.long	0x00003758
-	.long	0x00002f34
-	.long	0x000031dc
-	.long	0x00003522
-	.long	0x000036aa
-	.long	0x00002c04
-	.long	0x00002d14
-	.long	0x00003782
-	.long	0x00002e10
-	.long	0x00003422
-	.long	0x000035b2
-	.long	0x000034e2
+	.word	's
+	.word	't
+	.long	help
+	.long	mmudump
+	.long	modreg
+	.long	remapmmu
+	.long	setbase
+	.long	bpcmd
+	.long	resume
+	.long	editmem
+	.long	fillmem
+	.long	hexmath
+	.long	inport
+	.long	movemem
+	.long	outport
+	.long	regdump
+	.long	stkdump
+	.long	trace
 / dbgret -- debugcmd epilogue: restore r6-r13, return to trap stub.
 dbgret:
 	ldm	r6, @rr14, $8

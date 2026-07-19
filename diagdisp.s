@@ -179,10 +179,17 @@ padkey:
 	ld	r11, r12
 	ld	r1, r12
 	jr	dispatch
+/ ScrollLock -> DEL.
+paddel:
 	ld	r1, $0x007f
 	jr	9f
+/ Keypad rows: shift the index down to the 1/2/3 row, then translate
+/ through kbdtype2 with the NumLock/shift tests below.
+padrow1:
 	dec	r11, $1
+padrow4:
 	dec	r11, $1
+padrow7:
 	ldb	rl1, ddtbss_+0x104
 	extsb	rh1
 	bit	r1, $5
@@ -209,6 +216,7 @@ padkey:
 	ld	r11, r1
 	jr	7f
 8:
+padnul:
 	sub	r11, r11
 	jr	7f
 dispatch:
@@ -219,33 +227,37 @@ dispatch:
 	add	r1, r1
 	ldl	rr2, padtab(r1)
 	jp	@rr2
+/ padtab -- keypad/function-key dispatch, indexed by scancode-0x3b
+/ (F1-F10 pass through; NumLock and +/- give NUL; ScrollLock gives DEL;
+/ the rest select a keypad row).
 padtab:
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004202
-	.long	0x00004184
-	.long	0x0000412e
-	.long	0x00004138
-	.long	0x00004138
-	.long	0x00004138
-	.long	0x00004184
-	.long	0x00004136
-	.long	0x00004136
-	.long	0x00004136
-	.long	0x00004184
-	.long	0x00004134
-	.long	0x00004134
-	.long	0x00004134
-	.long	0x00004134
-	.long	0x00004134
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padret
+	.long	padnul
+	.long	paddel
+	.long	padrow7
+	.long	padrow7
+	.long	padrow7
+	.long	padnul
+	.long	padrow4
+	.long	padrow4
+	.long	padrow4
+	.long	padnul
+	.long	padrow1
+	.long	padrow1
+	.long	padrow1
+	.long	padrow1
+	.long	padrow1
 7:
+padret:
 	ld	r1, r11
 9:
 	ldm	r11, @rr14, $3

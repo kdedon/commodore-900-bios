@@ -13,27 +13,26 @@ SS	= 0x3F3F
 
 / ----------------------------------------------------------------------------
 / Reset + trap/IRQ vector area.  On Z8001 reset the CPU
-/ loads FCW from 0x0002 and PC (seg:off) from 0x0004:0x0006 -> start (0x0038).
-/ Each trap entry is an FCW long + a segmented PC long pointing at its handler.
-/ Encoded as literal data so the bytes match the ROM exactly.
+/ loads FCW from 0x0002 and PC (seg:off) from 0x0004:0x0006 -> start.
+/ Each trap entry is a reserved word + FCW, then the handler's segmented PC.
 / ----------------------------------------------------------------------------
 psa:
 	.word	0xe81b
 	.word	0xc000
 	.word	0x8000
-	.word	0x0038
-	.long	0x0000c000
-	.long	0x8000029e
-	.long	0x0000c000
-	.long	0x800002a4
-	.long	0x0000c000
-	.long	0x800002aa
-	.long	0x0000c000
-	.long	0x800002b0
-	.long	0x0000c000
-	.long	0x800002ba
-	.long	0x0000c000
-	.long	0x800002c0
+	.word	start
+	.word	0x0000, 0xc000
+	.word	0x8000, tepa
+	.word	0x0000, 0xc000
+	.word	0x8000, tprv
+	.word	0x0000, 0xc000
+	.word	0x8000, tsys
+	.word	0x0000, 0xc000
+	.word	0x8000, tseg
+	.word	0x0000, 0xc000
+	.word	0x8000, tnmi
+	.word	0x0000, 0xc000
+	.word	0x8000, tnvi
 
 / ----------------------------------------------------------------------------
 / start (ROM 0x0038) -- power-on / reset entry.  Sets up refresh + the program
