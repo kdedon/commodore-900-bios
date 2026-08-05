@@ -1,0 +1,30 @@
+#!/bin/sh
+# mk/mwc1985/as -- the 1985 Z8001 assembler, run as a guest process.
+#
+#	as [-g] [-o] [-x] OUT FILE.s
+#
+# `as' survives only as a recovered 1985 Z8001 binary; it is tracked in
+# vendor/mwc-1985/bin and staged into the guest root's bin/.  Its own option letters
+# pass through unchanged; the only work here is naming the binary and reporting
+# its absence with the reason.
+#
+# Note the ROM Makefile's calling convention, which is the assembler's own and
+# not getopt's: `as -go OUT FILE.s' -- the output file is a positional
+# argument, not the value of a -o.
+. "$(dirname "$0")/common.sh"
+
+mwc_need_root
+AS=$C900_1985ROOT/bin/as
+mwc_need "$AS" "the assembler"
+
+# The output name is the first non-option argument, so a failed assembly does
+# not leave a stale object that make will accept.
+out=""
+for a in "$@"; do
+	case "$a" in
+	-*) ;;
+	*)  [ -n "$out" ] || out=$a ;;
+	esac
+done
+
+mwc_run "$AS" "$@" || { st=$?; [ -n "$out" ] && rm -f "$out"; exit $st; }

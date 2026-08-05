@@ -1,0 +1,9 @@
+# The vendored 1985 system is Z8001 executables, an archive and an object, plus
+# two text files describing them.  Marking the binaries stops any filter from
+# rewriting a byte of a compiler that cannot be rebuilt; the text files are
+# pinned to LF so a CRLF checkout does not change the variant word a shell
+# reads out of VARIANT.
+vendor/mwc-1985/bin/* binary
+vendor/mwc-1985/lib/* binary
+vendor/mwc-1985/VARIANT   text eol=lf
+vendor/mwc-1985/SOURCES.md text eol=lf

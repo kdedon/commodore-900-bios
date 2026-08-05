@@ -1,0 +1,83 @@
+# build -- reproduce the ROM from source on every push, then boot it.
+#
+# Every tool in this build is a Z8001 COHERENT binary from 1985, so each one
+# runs as a guest process under the emulator's `c900 --exec'.  The compiler,
+# the assembler, the linkage editor, the C library and the header trees are in
+# the checkout, at vendor/mwc-1985; the ONE thing placed here is the emulator,
+# pinned in DEPS.  This job needs no toolchain tree, no COHERENT tree and no
+# compiler build.  Until the 1985 library, C runtime and header trees were
+# recovered this build needed a stock COHERENT 0.7.3 hard-disk image, which no
+# runner can have, so it ran nowhere.
+#
+# WHAT IS TESTED IS THE ROM, NOT A HASH OF IT.  boot-check boots the image just
+# built and requires it to run every diagnostic, in order, and hand over to the
+# boot block.  The byte-for-byte comparison against Commodore's V1.0 dumps is a
+# separate goal (`make -f mk/host.mk check C900_ROMREF=...'), and it is not run
+# here on purpose: two of this repository's goals are to CHANGE the ROM, so
+# after the 1.0 tag a build still matching the reference would mean the change
+# had not been made.
+#
+# CI SETS THE VARIABLES; it never relies on the search.  A job that depended on
+# directory adjacency breaks the first time a runner image moves its checkouts,
+# and the search has its own regression test (resolver-isolation.yml).
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The emulator is cached on its pin.  Nothing else is fetched: the
+      # compiler is checked out with the sources it compiles.
+      - name: The emulator pin
+        id: pin
+        run: echo "tag=$(awk '$1=="emu"{print $4}' DEPS)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: deps/commodore-900-emulator
+          key: emu-${{ runner.os }}-${{ steps.pin.outputs.tag }}
+      - name: Place the pinned emulator
+        run: make -f mk/host.mk deps DEP=emu
+
+      - name: Stage the 1985 guest root
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk stage
+
+      - name: Build the ROM
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk split
+
+      - name: Boot it
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk boot-check
+
+      # The halves, off every green push: a stranger should not have to build a
+      # 1985 toolchain to get an EPROM image.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rom
+          path: |
+            rom.H
+            rom.L
+
+      - name: The link map, when it does not build
+        if: failure()
+        run: cat build/*.log 2>/dev/null || true

@@ -19,7 +19,6 @@ typedef unsigned long addr_t;
 
 #include "romconf.h"
 
-#define RAMBASE  0x08000000L    /* WD command block / load base */
 #define LDSEG    0x30           /* logical segment the OS loads into */
 #define RUNADDR  ((addr_t)0L)
 #define CTYPE    1              /* clock type: 6MHz */

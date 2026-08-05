@@ -1,0 +1,82 @@
+# release -- on a v* tag, publish what somebody burns: the two EPROM images.
+#
+# The ROM is built HERE rather than taken from the build workflow's run: a
+# release asset has to come from the tag it claims to be, and an artifact
+# downloaded across workflows is one more place the two can differ.  It is the
+# same recipe, so the bytes are the same bytes.
+#
+# BUILT WITH THE 1985 COMPILER, which is the point of shipping it at all: what
+# a person burns is what Mark Williams' own passes produced, from the copy of
+# them in this repository, run under the emulator.  No other compiler
+# reproduces this ROM.
+#
+# THE ACCEPTANCE TEST RUNS BEFORE ANYTHING IS PUBLISHED.  rom.H and rom.L go
+# into a physical part; boot-check boots the pair just built and requires it to
+# run every diagnostic and hand over to the boot block.  A ROM that links is
+# not a ROM that boots, and the difference is only visible by booting it.
+name: release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write          # to attach assets to the release
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The emulator
+        run: make -f mk/host.mk deps DEP=emu
+
+      # What built the images being published, in the run log and in the
+      # release notes: for a shipped artifact "what built this" must be
+      # answerable later, when the workspace is gone.  The compiler is in the
+      # tag being released, so the tag answers it -- what goes in the notes is
+      # the hashes of the binaries that ran.
+      - name: What built it
+        id: cc
+        run: |
+          sha256sum vendor/mwc-1985/lib/* vendor/mwc-1985/bin/*
+          {
+            echo 'notes<<EOF'
+            echo 'Built with the June 1985 Mark Williams Z8001 compiler, run under the emulator.'
+            echo
+            echo '```'
+            sha256sum vendor/mwc-1985/lib/cpp vendor/mwc-1985/lib/cc0 \
+                      vendor/mwc-1985/lib/cc1 vendor/mwc-1985/lib/cc2 \
+                      vendor/mwc-1985/bin/as vendor/mwc-1985/bin/nld
+            echo '```'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stage the 1985 guest root
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk stage
+
+      - name: Build the ROM halves
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk split
+
+      - name: It boots
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk boot-check
+
+      # The halves are named as the programmer wants them: rom.H is the even
+      # bytes, rom.L the odd ones.  Both, or neither -- one half of an EPROM
+      # pair is not a release.
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            rom.H
+            rom.L
+          body: ${{ steps.cc.outputs.notes }}
+          fail_on_unmatched_files: true

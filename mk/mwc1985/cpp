@@ -1,0 +1,18 @@
+#!/bin/sh
+# mk/mwc1985/cpp -- the 1985 C preprocessor, run as a guest process.
+#
+#	cpp [-E] [-Dname[=val]] [-Uname] [-Idir] FILE > OUT
+#
+# The ROM's Makefile preprocesses its .s files with /lib/cpp before assembling
+# them, so this is a build tool in its own right and not only the compiler's
+# first pass.  Output goes to stdout, as it does on the machine.
+#
+# The 1985 cpp writes its DIAGNOSTICS to stdout too, in among the C, so a
+# warning becomes a line of the preprocessed source.  mk/mwc1985/cc checks for
+# that; a caller redirecting this script into a .i file should do the same.
+. "$(dirname "$0")/common.sh"
+
+mwc_need_root
+CPP=$C900_1985ROOT/lib/cpp
+mwc_need "$CPP" "the preprocessor"
+mwc_run "$CPP" "$@"

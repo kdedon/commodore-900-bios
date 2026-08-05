@@ -1,0 +1,119 @@
+# resolver-isolation -- the regression test for the dependency SEARCH.
+#
+# Every other job sets C900_EMU explicitly, as it must: a job that depended on
+# directory adjacency breaks the first time a runner image moves its checkouts.
+# That leaves the search list untested -- and the bug the sibling repositories
+# actually had is the one being tested for here: the resolver walked outward to
+# `/', so on a runner it could find another job's checkout, and on a laptop
+# whatever is in $HOME, and report a false success.  The walk is bounded at
+# three parents, which is exactly what reaches the enclosing workspace from a
+# repository staged at repos/<repo>.
+#
+# So: the repository ALONE, six levels deep, with an empty $HOME, nothing beside
+# it and no c900 on $PATH.  The emulator edge must refuse BY NAME, and a value
+# the user gave must be refused as ITSELF rather than quietly replaced.
+#
+# AND THE COMPILER MUST NOT REFUSE.  It is in the checkout, so staging the 1985
+# guest root has to SUCCEED in that same emptiness -- which is the assertion
+# that this repository is self-contained, and the one that fails the moment
+# something reaches for a sibling toolchain or COHERENT tree again.
+name: resolver-isolation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: src }
+
+      # Six levels deep, and nothing but this repository anywhere in them:
+      # deeper than the three parents the search is bounded at, so a walk that
+      # went further would leave the sandbox and find the runner's own
+      # checkouts -- which is the failure being tested for.
+      - name: Stage a lone clone, six levels deep
+        run: |
+          mkdir -p iso/home iso/a/b/c/d/e/f
+          rsync -a --exclude .git src/ iso/a/b/c/d/e/f/commodore-900-bios/
+
+      - name: The emulator edge refuses, and names its variable
+        working-directory: iso/a/b/c/d/e/f/commodore-900-bios
+        run: |
+          set +e
+          out=$(env -i HOME="$GITHUB_WORKSPACE/iso/home" PATH=/usr/bin:/bin \
+                sh mk/deps.sh -n emu 2>&1)
+          rc=$?
+          set -e
+          echo "$out"
+          test $rc -ne 0 || { echo "FAIL: emu resolved to something that is not there"; exit 1; }
+          echo "$out" | grep -q C900_EMU || { echo "FAIL: the refusal does not name C900_EMU"; exit 1; }
+          echo "$out" | grep -q "$GITHUB_WORKSPACE/iso/home" && { echo "FAIL: the emu search reached into \$HOME"; exit 1; }
+          :
+
+      # mk/emulator.sh is the resolver the BUILD uses for the emulator;
+      # mk/deps.sh only has to agree with it.  It refuses at the point of use,
+      # so it is exercised as the build exercises it: sourced, then asked.
+      - name: The build's own emulator resolver refuses too
+        working-directory: iso/a/b/c/d/e/f/commodore-900-bios
+        run: |
+          set +e
+          out=$(env -i HOME="$GITHUB_WORKSPACE/iso/home" PATH=/usr/bin:/bin \
+                sh -c 'C900_ROOT=$PWD; . ./mk/emulator.sh; emu_need "build the ROM"' 2>&1)
+          rc=$?
+          set -e
+          echo "$out"
+          test $rc -ne 0 || { echo "FAIL: emulator.sh resolved something that is not there"; exit 1; }
+          echo "$out" | grep -q C900_EMU || { echo "FAIL: emulator.sh refusal does not name C900_EMU"; exit 1; }
+
+      # THE SELF-CONTAINMENT ASSERTION.  Staging the 1985 guest root is the
+      # first thing a build does and the place the compiler is wanted; here it
+      # must SUCCEED, with no sibling of any kind and no network, because the
+      # compiler is in the checkout.  It is checked by what it produced, not by
+      # its exit status: a root missing a pass or a header tree still lets the
+      # build start and fails much later.
+      - name: The 1985 root stages out of the checkout alone
+        working-directory: iso/a/b/c/d/e/f/commodore-900-bios
+        run: |
+          env -i HOME="$GITHUB_WORKSPACE/iso/home" PATH=/usr/bin:/bin \
+            sh mk/1985root.sh
+          for f in lib/cpp lib/cc0 lib/cc1 lib/cc2 lib/libc.a lib/crts0.o \
+                   bin/as bin/nld VARIANT \
+                   usr/sys/z8001/h/canon.h usr/sys/h/con.h usr/include/dir.h; do
+            test -f "build/1985root/$f" || { echo "FAIL: no $f in the staged root"; exit 1; }
+          done
+
+      - name: A wrong value is refused as itself
+        working-directory: iso/a/b/c/d/e/f/commodore-900-bios
+        run: |
+          set +e
+          out=$(env -i HOME="$GITHUB_WORKSPACE/iso/home" PATH=/usr/bin:/bin \
+                sh mk/deps.sh -n emu /nonexistent/emu 2>&1)
+          rc=$?
+          set -e
+          echo "$out"
+          test $rc -ne 0 || { echo "FAIL: emu accepted a value that is not there"; exit 1; }
+          echo "$out" | grep -q "/nonexistent/emu" || { echo "FAIL: the refusal does not quote the value given"; exit 1; }
+
+      # `make deps' is the answer that refusal points at, so it must run in the
+      # same emptiness -- and it must place the emulator where the resolver was
+      # just shown to look, or the two halves do not agree.  Run twice: the
+      # second time changes nothing.
+      - name: make deps places the pinned emulator, and is idempotent
+        working-directory: iso/a/b/c/d/e/f/commodore-900-bios
+        env:
+          HOME_ISO: ${{ github.workspace }}/iso/home
+        run: |
+          env -i HOME="$HOME_ISO" PATH=/usr/bin:/bin make -f mk/host.mk deps DEP=emu
+          test -x deps/commodore-900-emulator/bin/c900 || { echo "FAIL: nothing was unpacked"; exit 1; }
+          before=$(find deps -newermt '@0' | sort | md5sum)
+          out=$(env -i HOME="$HOME_ISO" PATH=/usr/bin:/bin make -f mk/host.mk deps DEP=emu 2>&1)
+          echo "$out"
+          after=$(find deps -newermt '@0' | sort | md5sum)
+          test "$before" = "$after" || { echo "FAIL: a second make deps changed deps/"; exit 1; }
+          env -i HOME="$HOME_ISO" PATH=/usr/bin:/bin sh mk/deps.sh emu \
+            | grep -q "deps/commodore-900-emulator" \
+            || { echo "FAIL: make deps put it where no resolver looks"; exit 1; }

@@ -1,0 +1,16 @@
+#!/bin/sh
+# mk/mwc1985/run -- run one of the ROM build's OWN tools as a guest process.
+#
+#	run ./bootfix rom
+#	run ./prom rom
+#
+# bootfix and prom are Z8001 COHERENT programs compiled by this build, so on a
+# host they need the same process runner every 1985 tool needs.  On a booted
+# C900 the Makefile calls them directly and this script is never involved --
+# which is why the Makefile spells it `$(RUN) ./bootfix rom' with $(RUN) empty
+# by default.
+. "$(dirname "$0")/common.sh"
+
+emu_need "run the ROM's own bootfix and prom, which are Z8001 binaries"
+[ -x "$1" ] || mwc_die "$1: not built"
+mwc_run "$@"

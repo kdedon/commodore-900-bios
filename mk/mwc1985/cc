@@ -1,0 +1,84 @@
+#!/bin/sh
+# mk/mwc1985/cc -- compile one C file with the June 1985 Mark Williams passes.
+#
+#	cc -c [-o OUT] [-Idir] [-Dname[=val]] [-Uname] FILE.c
+#	cc -o OUT [-Idir] ... FILE.c		link a hosted program (bootfix, prom)
+#
+# The original driver /bin/ccx cannot run here: it fork/exec/waits each pass,
+# and `c900 --exec' is a one-process runner.  Make and this script do the
+# sequencing on the host; each pass is one guest process.
+#
+# Pass usage (each pass prints it when run with no arguments):
+#
+#	Usage: cc0 variant in out
+#	Usage: cc1 variant in out [mlevel [slevel [olevel]]]
+#	Usage: cc2 variant in out [temp]
+#
+# cc2 writes a COHERENT l.out object directly (magic 0407, l_flag LF_32) --
+# there is no assembly step for C, so `as' is only ever called for the ROM's
+# hand-written .s files.
+#
+# The 1985 cpp SPINS FOREVER on `register char' in a function body; none of the
+# ROM's sources contains one, so this path uses it as the original build did.
+# If one is ever added, the compile will not fail -- it will burn the
+# emulator's whole instruction budget and be reported against the file.
+. "$(dirname "$0")/common.sh"
+
+CPP=$C900_1985ROOT/lib/cpp
+CC0=$C900_1985ROOT/lib/cc0
+CC1=$C900_1985ROOT/lib/cc1
+CC2=$C900_1985ROOT/lib/cc2
+
+out=""; src=""; compileonly=0; cppopts=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-c)  compileonly=1;;
+	-o)  out=$2; shift;;
+	-o*) out=${1#-o};;
+	-D|-U|-I) cppopts="$cppopts $1$2"; shift;;
+	-D*|-U*|-I*) cppopts="$cppopts $1";;
+	-*)  mwc_die "unknown option $1";;
+	*)   [ -z "$src" ] || mwc_die "one input file at a time (got $src and $1)"
+	     src=$1;;
+	esac
+	shift
+done
+[ -n "$src" ] || mwc_die "no input file"
+case "$src" in
+*.c) ;;
+*)   mwc_die "$src: not a C source file";;
+esac
+
+mwc_need_root
+for p in "$CPP" "$CC0" "$CC1" "$CC2"; do mwc_need "$p" "a compiler pass"; done
+
+# Intermediates in a private directory, INSIDE the staged root: the passes name
+# them positionally, so two parallel compiles of files with the same basename
+# would otherwise share them -- and every path a guest process is handed as an
+# argument is a GUEST path, which under $N2ROOT means one inside the root.
+# Removed on the way out, whether or not the compile succeeded.
+tmp=$(mktemp -d "$C900_1985ROOT/tmp/cc.XXXXXX")
+gtmp=/tmp/$(basename "$tmp")
+trap 'rm -rf "$tmp"' EXIT INT HUP TERM
+
+V=$(mwc_variant system)
+# The object is written to a temporary and moved into place only on success.
+# A pass that fails after opening its output leaves a short or empty file
+# behind, and a make that finds that file newer than its source treats the
+# failed compile as a finished one on the next run.
+mwc_run "$CPP" $cppopts "$src"           > "$tmp/i"
+mwc_cpp_check "$tmp/i" "$src"
+mwc_run "$CC0" "$V" "$gtmp/i"  "$gtmp/z0"
+mwc_run "$CC1" "$V" "$gtmp/z0" "$gtmp/z1"
+mwc_run "$CC2" "$V" "$gtmp/z1" "$gtmp/o" "$gtmp/scratch"
+
+if [ "$compileonly" = 1 ]; then
+	[ -n "$out" ] || out=$(basename "${src%.c}").o
+	mv "$tmp/o" "$out"
+	exit 0
+fi
+
+# A hosted program: crt0 first, libc last, both by their guest paths.  This is
+# only ever bootfix and prom, which the ROM build runs on its own output.
+[ -n "$out" ] || out=$(basename "${src%.c}")
+sh "$(dirname "$0")/ld" -o "$out" /lib/crts0.o "$gtmp/o" /lib/libc.a

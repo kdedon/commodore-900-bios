@@ -1,0 +1,25 @@
+#!/bin/sh
+# mk/mwc1985/ld -- the 1985 linkage editor, run as a guest process.
+#
+# `nld' is the one to call, not `ld': cc2 emits the 32-bit object format
+# (l_flag carries LF_32, 020) and nld is the loader for it.  It is tracked in
+# vendor/mwc-1985/bin; mk/1985root.sh stages it into the guest root's bin/.
+#
+# Options are forwarded unchanged -- the ROM's Makefile already speaks this
+# loader's language (-i, -R, -o), because these are the flags the original
+# build used.
+. "$(dirname "$0")/common.sh"
+
+mwc_need_root
+LD=$C900_1985ROOT/bin/nld
+mwc_need "$LD" "the linkage editor"
+
+out=""; prev=""
+for a in "$@"; do
+	[ "$prev" = "-o" ] && out=$a
+	prev=$a
+done
+
+# A link that fails part-way has usually already created its output.  Removing
+# it keeps make from treating the wreck as a built target on the next run.
+mwc_run "$LD" "$@" || { st=$?; [ -n "$out" ] && rm -f "$out"; exit $st; }

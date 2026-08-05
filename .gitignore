@@ -1,0 +1,18 @@
+# Build products.  Nothing built is tracked: the ROM is reproduced, not stored.
+#
+# ANCHORED, every one of them.  The Makefile compiles into the repository root
+# and nowhere else, so that is the only place these names are output -- while
+# vendor/mwc-1985 holds a 1985 C runtime startoff called crts0.o, which an
+# unanchored *.o drops from `git add' without saying so, leaving a checkout
+# that cannot link bootfix.
+/*.o
+/*.i
+/rom
+/rom.H
+/rom.L
+/bootfix
+/prom
+
+# The staged 1985 guest root (mk/1985root.sh) and anything `make deps' places.
+/build/
+/deps/
