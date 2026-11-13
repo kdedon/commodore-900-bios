@@ -130,8 +130,6 @@ static
 report(should, was, port)
 int should, was, port;
 {
-	romconf.has_hires = 2;
-	ddtvars.d_conhires = 2;
 	romconf.rom_ctype = 1;
 	chipinit();
 	put_init = 0;

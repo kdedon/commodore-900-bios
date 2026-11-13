@@ -65,7 +65,7 @@ port_test()
 		outstr(&msgs[17]);	/* "OK\n" */
 	} else {
 		outstr(&msgs[21]);	/* "\n    Bad segment detected = " */
-		puthex((long)seg, 4);
+		puthex((long)seg - 1, 4);
 		putchar('\n');
 	}
 }

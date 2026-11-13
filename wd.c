@@ -85,6 +85,7 @@ char *buf;
 {
         register unsigned char *cmd, *p;
         register int i;
+        int tries = 0;
 
         if (unit < 0 || unit > 3) {
                 puts("bad parameters in wdread\n");
@@ -104,7 +105,7 @@ char *buf;
                 cmd[6] = 0x08;
                 cmd[7] = 0x04;
                 cmd[8] = 0x00;
-                cmd[1] = (unit << 5) | (block >> 16);
+                cmd[1] = (unit << 5) | ((block >> 16) & 0x1f);
                 cmd[2] = block >> 8;
                 cmd[3] = block;
                 cmd[0x0c] = 0xff;
@@ -112,7 +113,7 @@ char *buf;
                 i = cmd[0x0c] & 0xff;
                 if (i == 0x80)                  /* done */
                         break;
-                if (i == 0x76)                  /* busy: retry */
+                if (i == 0x76 && ++tries < 10)  /* busy: retry */
                         continue;
                 if (quiet == 0 || (i != 0x84 && i != 0x92 && i != 0x94)) {
                         puts("read error: status=0x");
@@ -171,6 +172,7 @@ register int unit;
 {
         register unsigned char *cmd, *p;
         register int i;
+        int tries = 0;
 
         if (unit == 0 || unit == 1)
                 cmd = (unsigned char *)0x08000010;
@@ -195,7 +197,7 @@ register int unit;
                 i = cmd[0x0c] & 0xff;
                 if (i == 0x80)
                         break;
-                if (i == 0x76)
+                if (i == 0x76 && ++tries < 10)
                         continue;
                 puts("error 0x");
                 puthex((long)i, 4);

@@ -29,6 +29,8 @@ char    bootsyn[] = "boot command syntax error";
 char    baddev[] = "bad boot device";
 char    badlout[] = "l.out header error";
 char    badtype[] = "bad file type";
+char    rderr[] = "file read error";
+char    initerr[] = "device initialization failed";
 
 static  unsigned lbn;                   /* Logical block number for vread */
 static  long    doffset;                /* Disc block offset */
@@ -45,6 +47,7 @@ extern  unsigned        seg;
 extern  int     hdf;                    /* booting from hard disk */
 #include "ddtvars.h"
 #define fdf     ddtvars.d_fdf              /* booting from floppy */
+#define nerr    ddtvars.d_nerr             /* disk error count */
 extern  char    dname[2];               /* parsed device name */
 extern  char    namebuf[DIRSIZ];        /* directory name scan buffer */
 extern        outstr();
@@ -119,6 +122,8 @@ register char *s;
         if (*s++ != ')')
                 return (bootsyn);
         (*dp->dv_load)();
+        if (nerr)
+                return (initerr);
         return (fsboot(s));
 }
 
@@ -141,7 +146,7 @@ register char *s;
                 switch (dip->di_mode & IFMT) {
                 case IFDIR:
                         for (cp = namebuf; cp < &namebuf[DIRSIZ]; cp++)
-                                *cp++ = 0;
+                                *cp = 0;
                         for (cp = namebuf; *s!='/' && *s!='\0'; s++)
                                 if (cp < &namebuf[DIRSIZ])
                                         *cp++ = *s;
@@ -174,8 +179,10 @@ ino_t *inop;
         register char *cp1, *cp2;
         register unsigned n;
         register struct direct *dp;
+        long size;
 
-        while (ip->di_size > 0) {
+        size = ip->di_size;             /* ip is in buf, which vread reuses */
+        while (size > 0) {
                 if (vread() == 0)
                         return ("directory read error");
                 for (dp = &buf[0]; dp < &buf[512]; dp++) {
@@ -189,12 +196,12 @@ ino_t *inop;
                                 if (*cp1++ != *cp2++)
                                         break;
                         } while (--n);
-                        if (cp2 >= &name[DIRSIZ]) {
+                        if (n == 0) {
                                 *inop = dp->d_ino;
                                 return (NULL);
                         }
                 }
-                ip->di_size -= 512;
+                size -= 512;
         }
         return ("file not found");
 }
@@ -214,6 +221,7 @@ struct dinode *dip;
         unsigned code, data;
         register struct ldheader *lp;
         register int i;
+        long len;
 
         if (vread() == 0)
                 return (badlout);
@@ -260,7 +268,10 @@ struct dinode *dip;
 #else
         i = fload(&s, &o, sizeof *lp, is, bis);
 #endif
-        fload(&s, &o, i, ds, bds);
+        if (i < 0 || fload(&s, &o, i, ds, bds) < 0)
+                return (rderr);
+        data = code;
+        data += ((bis+is+1023)&~1023)>>8;
         /*
          * this really ugly code handles the case where the command
          * block for the Western Digital controller is fixed at the
@@ -273,11 +284,24 @@ struct dinode *dip;
         if (hdf || fdf) {
                 s = romconf.rom_bram << 2;
                 s &= ~0xFF;
-                ldirb(s+0x100, 0, s, 0, 0xFFFF);
-                pclear(s+0x100, 0, 0xFFFF);
+                len = ((long)(data - code) << 8) + ds + bds;
+                for (i = (len + 0xFFFF) >> 16; i > 0; i--, s += 0x100) {
+                        ldirb(s+0x100, 0, s, 0, 0x8000);
+                        ldirb(s+0x100, 0x8000, s, 0x8000, 0x8000);
+                }
+                /* clear what the move left behind above the image */
+                s = (romconf.rom_bram << 2) & ~0xFF;
+                if (len < 0x10000L) {
+                        s += 0x100;
+                        o = 0;
+                } else {
+                        s += (unsigned)(len >> 16) << 8;
+                        o = len;
+                        len = 0x10000L;
+                }
+                place((char *)0, &s, &o, (unsigned)(len >> 1));
+                place((char *)0, &s, &o, (unsigned)(len - (len >> 1)));
         }
-        data = code;
-        data += ((bis+is+1023)&~1023)>>8;
         segload(LDSEG, code, data);
         if (ldebug) {
                 outstr("\nStart address : ");
@@ -300,38 +324,50 @@ struct dinode *dip;
  */
 fload(segp, offp, offset, size, bsize)
 unsigned *segp, *offp;
-unsigned offset;
+register unsigned offset;
 unsigned size;
 unsigned bsize;
 {
-        register char *bp;
-        register unsigned s, o;
         register unsigned count;
 
-        s = *segp;
-        o = *offp;
-        for ( ; size!=0; size -= count) {
-                if (offset == 0)
-                        vread();
-                count = 512-offset;
-                bp = &buf[offset];
-                count = min(count, size);
-                ldirb(bp, s, o, count);
-                if (o + count < o)
-                        s++;
-                o += count;
-                offset = 0;
+        while (size != 0) {
+                if (offset == 0 && vread() == 0)
+                        return (-1);
+                count = min(512-offset, size);
+                place(&buf[offset], segp, offp, count);
+                offset = (offset + count) & 511;
+                size -= count;
         }
-        offset = count;
-        if (bsize != 0) {
-                pclear(s, o, bsize);
-                if (o + bsize < o)
-                        s++;
-                o += bsize;
-        }
-        *segp = s;
-        *offp = o;
+        place((char *)0, segp, offp, bsize);
         return (offset);
+}
+
+/*
+ * Copy n bytes from bp to *segp|*offp, or clear them if bp is 0,
+ * splitting at segment ends.  A zero count to ldirb or pclear
+ * would mean 64K.
+ */
+place(bp, segp, offp, n)
+register char *bp;
+unsigned *segp, *offp;
+register unsigned n;
+{
+        register unsigned c;
+
+        while (n != 0) {
+                c = n;
+                if (*offp != 0 && c > 0 - *offp)
+                        c = 0 - *offp;
+                if (bp != 0) {
+                        ldirb(bp, *segp, *offp, c);
+                        bp += c;
+                } else
+                        pclear(*segp, *offp, c);
+                *offp += c;
+                if (*offp == 0)
+                        *segp += 0x100;
+                n -= c;
+        }
 }
 
 /*
@@ -372,7 +408,9 @@ vread()
 {
         long pb;
 
-        if (lbn >= ND+NBN || (pb = vblocks[lbn])==0) {
+        if (lbn >= ND+NBN)
+                return (0);             /* past the single indirect block */
+        if ((pb = vblocks[lbn]) == 0) {
                 register char *cp;
 
                 for (cp = buf; cp < &buf[512]; cp++)

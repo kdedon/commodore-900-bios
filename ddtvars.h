@@ -6,7 +6,7 @@
 #ifndef	DDTVARS_H
 #define	DDTVARS_H
 struct	ddtvars	{
-	char	d_conhires;	/* console select: 2 = hi-res */
+	char	d_conlr;	/* lo-res 6845 console */
 	char	pad1[0x27];
 	char	d_mmusave[4];	/* MMU descriptor save */
 	char	pad1b[2];

@@ -1,12 +1,12 @@
 /*
  * Flatten the linked boot ROM (l.out) to the 32K EPROM image, in
- * place: text at 0, data at 0x6800, zero fill.  The header is parsed
+ * place: text at 0, data at ROMDATA, zero fill to ROMSIZE.  The header is parsed
  * byte by byte (shorts low-first, longs high word first).  Two half
  * buffers -- a single 32K array is too big for an object.
  */
 
-#define TEXTMAX 0x6800          /* image 0x0000-0x67ff: text + zero fill  */
-#define DATAMAX 0x1800          /* image 0x6800-0x7fff: seg-1 data + fill */
+#define TEXTMAX ROMDATA                 /* text + zero fill */
+#define DATAMAX (ROMSIZE-ROMDATA)       /* seg-1 data + fill */
 
 char    tbuf[TEXTMAX];
 char    dbuf[DATAMAX];

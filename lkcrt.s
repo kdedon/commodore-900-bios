@@ -37,7 +37,7 @@ psa:
 / ----------------------------------------------------------------------------
 / start (ROM 0x0038) -- power-on / reset entry.  Sets up refresh + the program
 / status area, sizes RAM with an aa/55 pattern test (low->R13, high->R12 in
-/ 512-byte clicks), reads the console-select straps, probes the serial console,
+/ 1 KB clicks), reads the console-select straps, probes the serial console,
 / sets the stack (seg 0x3f), and calls main(ramlow, ramhigh).  If main returns,
 / jump back to RESET.
 / ----------------------------------------------------------------------------
@@ -108,10 +108,10 @@ sizeram_:
 	soutb	0x01fc, rl0
 	soutb	0x08fc, rh1
 	soutb	0x08fc, rl1
-	ld	r0, $0x1016
+	ld	r0, $ldrbuf_	/ data length: ldrbuf is not copied
 	ld	r2, $0x8000
-	ld	r3, $0x6b05
-	and	r3, $0xfc00
+	ld	r3, $ROMDATA
+	and	r3, $0xfc00	/ keeps the entry points below at their addresses
 	ld	r4, $0x3f00
 	sub	r5, r5
 	ldirb	(rr4), (rr2), r0
@@ -197,7 +197,7 @@ gotkey:
 	djnz	r5, 4b
 gomain:
 	ld	r14, $0x3f00
-	ld	r15, $0x121c
+	ld	r15, $ldrbuf_+0x206
 	ld	ldrbuf_+0x04, $0x8000
 	push	@rr14, r13
 	push	@rr14, r12

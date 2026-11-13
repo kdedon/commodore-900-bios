@@ -1,13 +1,13 @@
 /*
  * Commodore M-series boot ROM.
- * Console I/O primitives.  con_alt/con_hires route output to the
- * alternate or hi-res screen; otherwise the Z8030 SCC serial port.
+ * Console I/O primitives.  con_hr/con_lr route output to the
+ * hi-res bitmap or the lo-res 6845 screen; otherwise the Z8030 SCC.
  */
 
 #include "romconf.h"
 #include "ddtvars.h"
-#define con_alt    romconf.has_hires          /* alternate-screen select */
-#define con_hires  ddtvars.d_conhires          /* hi-res console select */
+#define con_hr     romconf.has_hires          /* hi-res bitmap console */
+#define con_lr     ddtvars.d_conlr            /* lo-res 6845 console */
 int  get_init = 0;              /* getchar initialized */
 char put_init = 0;              /* putchar initialized */
 
@@ -27,8 +27,8 @@ register char c;
 {
         register int s;
 
-        if (con_alt)   { altput(c); return; }
-        if (con_hires) { hrput(c); return; }
+        if (con_hr) { altput(c); return; }
+        if (con_lr) { hrput(c); return; }
         if (put_init == 0)
                 coninit();
         if (c == '\n')
@@ -45,7 +45,7 @@ getchar()
 {
         register int c;
 
-        if (con_alt || con_hires) {
+        if (con_hr || con_lr) {
                 if (get_init == 0) {
                         chipinit();
                         get_init++;

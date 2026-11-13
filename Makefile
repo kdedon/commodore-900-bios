@@ -15,6 +15,10 @@ CPPBIN=/lib/cpp
 LIB=/lib/libc.a
 RUN=
 
+# Data sits at ROMDATA in the image.  Reset copies it up to ldrbuf, which
+# must stay the last initialised object (porttest.o links last).
+LAYOUT=-DROMSIZE=0x8000 -DROMDATA=0x6c00
+
 OPTIONS=-DZ8000HR -DFIVEINCH=1 -DDDT -DAUTOBOOT
 CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
   -DBUFPADDR="(0x8000400L)"
@@ -34,8 +38,8 @@ rom: $(OBJECTS) font.o bootfix
 split: rom prom
 	$(RUN) ./prom rom
 
-bootfix: bootfix.c
-	$(CCBIN) -o bootfix -I/usr/sys/z8001/h bootfix.c
+bootfix: bootfix.c Makefile
+	$(CCBIN) -o bootfix $(LAYOUT) -I/usr/sys/z8001/h bootfix.c
 prom: prom.c
 	$(CCBIN) -o prom -I/usr/sys/z8001/h prom.c
 
@@ -59,8 +63,8 @@ sio.o: sio.c
 conf.o: conf.c
 	$(CC) conf.c
 
-crt.o: lkcrt.s
-	$(CPPBIN) -E -DDDT -DRAMBASE=0x08000000 lkcrt.s >crt.i
+crt.o: lkcrt.s Makefile
+	$(CPPBIN) -E -DDDT -DRAMBASE=0x08000000 $(LAYOUT) lkcrt.s >crt.i
 	$(ASBIN) -go crt.o crt.i
 	rm -f crt.i
 ddt.o: ddt.s

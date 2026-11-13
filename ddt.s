@@ -1395,14 +1395,17 @@ illerr:
 / bpswitch -- CPIR the sub-command char over the 'c d r s' key
 / table, indexed jump via bptab.
 bpswitch:
-	.byte	0x21, 0x00, 0x00, 0x04
-	ldl	rr2, $0x000031c4
+	.byte	0x21, 0x00, 0x00, 0x04	/ ld r0,$4, long form
+	ldl	rr2, $bpkeys
 	cpir	r1, @rr2, r0, z
 	jr	nz, illerr
-	sub	r3, $0x31c4
+	sub	r3, $bpkeys
 	add	r3, r3
 	ldl	rr2, bptab(r3)
 	jp	@rr2
+/ bpkeys -- sub-command keys.  bptab is offset so the doubled post-CPIR
+/ index lands on the .long after the keys.
+bpkeys:
 	.word	'c
 	.word	'd
 / bptab -- bc/bd/br/bs handler address table (raw .long targets).
@@ -1955,13 +1958,15 @@ mmudump:
 / indexed jump via cmdtab; no match -> illerr.
 dispatch:
 	ld	r0, $0x0010
-	ldl	rr2, $0x000039ba
+	ldl	rr2, $cmdkeys
 	cpir	r1, @rr2, r0, z
 	jp	nz, illerr
-	sub	r3, $0x39ba
+	sub	r3, $cmdkeys
 	add	r3, r3
 	ldl	rr2, cmdtab(r3)
 	jp	@rr2
+/ cmdkeys -- command keys, indexed into cmdtab the same way.
+cmdkeys:
 	.word	'?
 	.word	'M
 	.word	'R

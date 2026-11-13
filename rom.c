@@ -253,13 +253,13 @@ memory()
         puts("RAM base: ");
         puthex((long)(l >> 6), 4);
         puts("|");
-        puthex((long)(l << 12), 0x0c);
+        puthex((long)((l & 0x3f) << 10), 0x0c);
         puts("\n");
 
         puts("RAM top:  ");
         puthex((long)(h >> 6), 4);
         puts("|");
-        puthex((long)(h << 12), 0x0c);
+        puthex((long)((h & 0x3f) << 10), 0x0c);
         puts("\n");
 }
 
@@ -271,9 +271,9 @@ register int c;
 {
         if (c >= '0' && c <= '9')
                 return (c - '0');
-        if (c >= 'A' && c <= 'Z')
+        if (c >= 'A' && c <= 'F')
                 return (c - 'A' + 0xA);
-        if (c >= 'a' && c <= 'z')
+        if (c >= 'a' && c <= 'f')
                 return (c - 'a' + 0xa);
         return (-1);
 }
@@ -312,6 +312,12 @@ again:
                 if (c == '@') {
                         putchar('\n');
                         goto again;
+                }
+                if (s >= &as[sizeof line - 1]) {        /* full: unecho */
+                        putchar('\b');
+                        putchar(' ');
+                        putchar('\b');
+                        continue;
                 }
                 *s++ = c;
         }
@@ -365,7 +371,10 @@ char *args;
                 while ((d = hexdigit(*p++)) >= 0)
                         arg2 = (arg2 << 4) + d;
         }
-        wdformat(arg1);
+        if (format_flag)
+                wdformat(arg1);
+        else
+                puts("Badly formed format command!\n");
 }
 
 /*
@@ -379,9 +388,9 @@ char *args;
 
         while (*p == ' ' || *p == '\t')
                 p++;
+        unit = 0;
         if (hexdigit(*p) < 0)
                 goto issue;
-        unit = 0;
         while ((d = hexdigit(*p++)) >= 0)
                 unit = (unit << 4) + d;
 issue:
