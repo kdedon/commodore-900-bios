@@ -17,6 +17,7 @@ extern        mmuread();
 extern        mmuwrite();
 
 unsigned mgot;                  /* word read at a failure */
+static int shown;               /* characters of the count on screen */
 unsigned mwant;                 /* and the word expected */
 #if ROMKB > 32
 extern char skipmem;
@@ -39,7 +40,10 @@ unsigned low, hi;               /* RAM span, 1 KB clicks */
         top = hi - WINDOW;
         kb = 0;
 #if ROMKB > 32
-        outstr("\rPress C for setup, Space to skip the memory test\n");
+        for (n = 0; n < 13; n++)        /* over the banner's "Memory test: " */
+                putchar('\b');
+        outstr("Press C for setup, Space to skip the memory test\n");
+        outstr("Memory test: ");
         quick = skipmem;
 #endif
         for (seg = low >> 6; (seg << 6) < top; seg++) {
@@ -58,10 +62,9 @@ unsigned low, hi;               /* RAM span, 1 KB clicks */
                         return;
                 }
                 kb += n;
-                putchar('\r');
-                outstr("Memory test: ");
-                memdiag(kb);
-                putchar('K');
+#if ROMKB > 32
+                count(kb);
+#endif
         }
         for (seg = low >> 6; (seg << 6) < top; seg++)
                 *(unsigned *)mkfp(seg << 8, 0) = seg;
@@ -79,8 +82,9 @@ unsigned low, hi;               /* RAM span, 1 KB clicks */
         if ((hi >> 6) == 0x37)
                 high = himem(kb);
 #endif
-        putchar('\r');
-        outstr("Memory test: ");
+#if ROMKB > 32
+        count(0);
+#endif
         memdiag(hi - low + high);
         outstr("K OK\n");
         outw(0x001d, 0x0090);
@@ -177,10 +181,7 @@ unsigned kb;
                 }
                 SETBIT(segok, seg);
                 good += 64;
-                putchar('\r');
-                outstr("Memory test: ");
-                memdiag(kb + good);
-                putchar('K');
+                count(kb + good);
         }
         mmuwrite(SCRATCH, save);
         return (good);
@@ -207,3 +208,24 @@ unsigned seg, n;
         mfill(seg << 8, 0, n << 9);
         return (0);
 }
+
+#if ROMKB > 32
+/*
+ * Replace the KB count on screen with kb, or just erase it for 0.  The
+ * video consoles take a CR as a no-op, so this backs up instead.
+ */
+count(kb)
+register unsigned kb;
+{
+        register unsigned n;
+
+        for (; shown > 0; shown--)
+                putchar('\b');
+        if (kb == 0)
+                return;
+        memdiag(kb);
+        putchar('K');
+        for (n = kb, shown = 2; n >= 10; n /= 10)
+                shown++;
+}
+#endif

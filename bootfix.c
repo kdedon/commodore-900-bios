@@ -7,7 +7,11 @@
 #define ROMSIZE ((long)ROMKB * 1024)
 #define CHUNK   4096
 #define DATAAT  ((long)(unsigned)ROMDATA)
+#if ROMKB > 32
 #define CFGSIZE 16                      /* defaults block at the very end */
+#else
+#define CFGSIZE 0
+#endif
 
 char    buf[CHUNK];
 char    hdr[44];

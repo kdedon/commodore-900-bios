@@ -63,6 +63,19 @@ conpoll()
 }
 #endif
 
+/*
+ * Wait until the serial console has sent everything, so a chip test or
+ * reset that follows cannot cut a character short.
+ */
+drain()
+{
+        if (con_hr || con_lr)
+                return;
+        do
+                outb(0x0101, 1);
+        while ((inb(0x0101) & 0x01) == 0);      /* RR1 All Sent */
+}
+
 int
 getchar()
 {
