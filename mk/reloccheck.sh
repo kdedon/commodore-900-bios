@@ -17,7 +17,7 @@ C900_ROOT=$root
 . "$root/mk/emulator.sh"
 emu_need "boot the relinked ROM"
 
-PAD=${PAD:-256}
+PAD=${PAD:-16}
 # Objects whose contents only look like text addresses.
 ALLOW=${ALLOW:-dbgfmt hrfont}
 mwc=$root/mk/mwc1985
@@ -25,8 +25,7 @@ work=$root/build/reloc
 rm -rf "$work"
 mkdir -p "$work"
 
-OBJS="rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o ddt.o
- hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o porttest.o"
+OBJS=$(sed -n '/^OBJECTS=/,/^$/p' "$root/Makefile" | tr -d '\\' | sed 's/OBJECTS=crt.o//')
 for o in crt.o $OBJS font.o bootfix prom; do
 	[ -f "$root/$o" ] || { echo "reloccheck: $o missing; build the ROM first" >&2; exit 2; }
 done

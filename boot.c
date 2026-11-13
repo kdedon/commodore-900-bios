@@ -305,7 +305,7 @@ struct dinode *dip;
                 s = romconf.rom_bram << 2;
                 s &= ~0xFF;
                 len = ((long)(data - code) << 8) + ds + bds;
-                for (i = (len + 0xFFFF) >> 16; i > 0; i--, s += 0x100) {
+                for (i = (len + 0xFFFFL) >> 16; i > 0; i--, s += 0x100) {
                         ldirb(s+0x100, 0, s, 0, 0x8000);
                         ldirb(s+0x100, 0x8000, s, 0x8000, 0x8000);
                 }

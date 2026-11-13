@@ -17,7 +17,7 @@ RUN=
 
 # Data sits at ROMDATA in the image.  Reset copies it up to ldrbuf, which
 # must stay the last initialised object (porttest.o links last).
-LAYOUT=-DROMSIZE=0x8000 -DROMDATA=0x6c00
+LAYOUT=-DROMSIZE=0x8000 -DROMDATA=0x6c40
 
 OPTIONS=-DZ8000HR -DFIVEINCH=1 -DDDT -DAUTOBOOT
 CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
@@ -25,7 +25,8 @@ CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
 CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) -I/usr/sys/z8001/h
 LD=$(LDBIN) -i -R 0x00000000 -o rom
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
-  ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o porttest.o
+  ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
+  porttest.o
 
 # bootfix flattens the linked l.out to the 32K ROM image in place;
 # `prom rom` then splits it into rom.H (even bytes) + rom.L (odd bytes) for
@@ -91,6 +92,8 @@ diagdisp.o: diagdisp.s
 	$(CPPBIN) -E -DNLD -DDDT diagdisp.s >diagdisp.i
 	$(ASBIN) -gox diagdisp.o diagdisp.i
 	rm -f diagdisp.i
+memtest.o: memtest.c
+	$(CC) memtest.c
 porttest.o: porttest.c cioports.h
 	$(CC) porttest.c
 

@@ -159,15 +159,19 @@ includes the BIOS's LR init writes to 0x0410 and 0x0418
 
 ### 3.2 Faster test with a count-up
 
-- **Why it's slow.**  `march1`/`march2` (`ramtest.s:251-410`) write one
-  marker per segment and re-verify ALL of RAM for each one.  The cost is
-  O(n^2): about 32 MB of reads for 1 MB of RAM, and about 2 GB at 8 MB.
-- **The replacement is a linear March C-:** ⇑w0; ⇑r0w1; ⇑r1w0; ⇓r0w1;
-  ⇓r1w0; ⇓r0.  That is 10 accesses per word, O(n), and it still finds
-  stuck-at, transition and most coupling faults.
-- **Add an address-in-address pass** (write each word's own address and
-  check it) to catch decoder and aliasing faults the march misses.
-- **Use word-wide `ldir`/`cpir` loops** wherever the pattern allows.
+- **Correction: V1.0's test is linear, not quadratic.**  Each march pass
+  re-reads only its own segment.  It costs about 4 word accesses per
+  word, roughly 100 CPU cycles per word, plus the 1 KB sizing walk.
+  That is about 9 s per MB at 6 MHz, with nothing on screen.
+- **Done:** the test now runs from C, after the stack exists, one segment
+  at a time with `ldir`/`cpir` (about 9 cycles per word each):
+  - fill 0x5555, check, fill 0xAAAA, check, clear;
+  - then a tag per segment to catch aliasing.
+
+  That is about half V1.0's cycles, with better coverage.  The ROM's 7 KB
+  data window is skipped.
+- **Later, a full March C-** (10 accesses per word) as a setup-menu
+  option, in the 64 KB ROM.
 - **PC-style display:** `Memory test: 0000K` counts up on the console.
   - It updates every 64 KB on the active console: HR, LR, LC or serial.
   - On serial it uses CR without LF, so the line rewrites in place.
@@ -506,7 +510,8 @@ The C900 becomes a dumb terminal to another machine on any SCC channel.
   - Offer "save memory" through the setup menu: XMODEM out over serial
     (7.2), or raw to a disk area.  That gives a post-mortem crash dump of
     a hung kernel.
-  - The dump only works because March C- (3.2) can be skipped entirely.
+  - The dump only works because the memory test (3.2) can be skipped
+    entirely.
 - **Trap reporting.**  On an unexpected trap, `trap.c` drops straight
   into `ddt` with nothing printed.  Print the trap name, PC (seg:off),
   FCW and the MMU violation status first.  For a kernel that dies early
@@ -619,7 +624,8 @@ The C900 becomes a dumb terminal to another machine on any SCC channel.
    build.
 3. **The calibrated timer**, which the RAM test, autoboot and `wdgo2` all
    need.
-4. **The RAM map, plus March C- with the count-up.**
+4. **The RAM map, plus the faster test with the count-up.**  The test
+   and count-up are done; the map is not.
 5. **The video inventory**, including the LR-write fix on HR machines.
 6. **The handoff block.**  Send the final layout to kernel3 and kboot.
    kboot copies it into bootinfo v5/v6.

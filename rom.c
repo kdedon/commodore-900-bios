@@ -43,7 +43,7 @@ extern        puts();
 extern        putchar();
 extern        getchar();
 extern char  *gets();
-extern        memdiag();
+extern        memtest();
 extern        outstr();
 extern        selftest();
 extern        port_test();
@@ -63,10 +63,8 @@ extern        wdpark();
 main(low, hi)
 unsigned low, hi;
 {
-        if (!burnin) {
-                memdiag(hi - low);
-                outstr("K OK\n");
-        }
+        if (!burnin)
+                memtest(low, hi);
         if (!burnin)
                 selftest();
         if (!burnin)

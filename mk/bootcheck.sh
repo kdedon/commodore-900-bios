@@ -50,7 +50,7 @@ cp "$L" "$fw/bios_l.bin"
 # it puts a wall-clock bound on a ROM that hangs instead of one on a ROM that
 # is merely slow.
 log=$fw/console
-last='Automatic boot in progress'
+last='Mark Williams Company'
 "$C900_EMU" --firmware="$fw" --disk="$disk" --max="${C900_MAX:-4000000000}" \
 	--stop-on=none > "$log" 2>&1 &
 emupid=$!
@@ -76,7 +76,8 @@ for want in \
 	'CIO2 (U66) register test: OK' \
 	'SCC  (U74) register test: OK' \
 	'MMU  (U2) test: OK' \
-	'Automatic boot in progress'
+	'Automatic boot in progress' \
+	'Mark Williams Company'
 do
 	n=$(grep -n -F -m1 "$want" "$log" | cut -d: -f1 || :)
 	if [ -z "$n" ]; then
@@ -95,4 +96,4 @@ if [ $fail != 0 ]; then
 	cat "$log"
 	exit 1
 fi
-echo "bootcheck: the built ROM ran its diagnostics and handed over to the boot block"
+echo "bootcheck: the built ROM ran its diagnostics and started the kernel"

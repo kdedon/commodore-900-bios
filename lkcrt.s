@@ -93,14 +93,15 @@ sizeram_:
 	inc	r3, $2
 	jr	nz, 1b
 	incb	rh2, $1
-	jr	1b
+	cpb	rh2, $0x37	/ lo-res text RAM: stop
+	jr	nz, 1b
 2:
 	ldb	rl4, rh3
 	ldb	rh4, rh2
 	ld	r13, r4
 	srl	r13, $2
-	ld	r0, $0x1c45
-	srl	r0, $10
+	ldk	r0, $7		/ ROM data window, KB
+	nop
 	ld	r1, r13
 	sub	r1, r0
 	sll	r1, $2
@@ -111,7 +112,8 @@ sizeram_:
 	ld	r0, $ldrbuf_	/ data length: ldrbuf is not copied
 	ld	r2, $0x8000
 	ld	r3, $ROMDATA
-	and	r3, $0xfc00	/ keeps the entry points below at their addresses
+	nop			/ keeps the entry points below at their addresses
+	nop
 	ld	r4, $0x3f00
 	sub	r5, r5
 	ldirb	(rr4), (rr2), r0

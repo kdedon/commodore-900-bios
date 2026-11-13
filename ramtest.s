@@ -1,5 +1,4 @@
-/ Memory diagnostic: print the banner, size RAM, run the march
-/ passes, report failures.
+/ Memory diagnostic: print the banner, size RAM, report a dead segment.
 SS	= 0x3F3F
 
 / memdiag -- print an unsigned word in decimal.
@@ -216,7 +215,8 @@ sbanner:
 	inc	r11, $1
 	jr	1b
 / sizeram -- find top of RAM: write/readback 0xaaaa at the base of each
-/ segment from 0x08 upward until a segment fails to respond.
+/ segment from 0x08 upward until a segment fails to respond, or 0x37,
+/ where the lo-res text RAM would pass.
 sizeram:
 	lda	rr6, 0x08|0x0000
 	ld	r9, $0xaaaa
@@ -226,47 +226,20 @@ sizeram:
 	cp	r4, r9
 	jr	nz, chktop
 	addb	rh6, $0x01
-	jr	1b
+	cpb	rh6, $0x37
+	jr	nz, 1b
+	jr	gottop
 / chktop -- complement-verify the first failing segment (open bus, not a
-/ stuck cell), require more than 8 good segments (top > seg 0x0f), keep the
-/ top segment in r5, then background-fill segs 0x08..top with 0xaaaa.
+/ stuck cell) and require more than 8 good segments (top > seg 0x0f).
+/ The memory test proper runs later, from main.
 chktop:
 	com	@rr6
 	cp	r4, @rr6
 	jr	nz, ramerr
+gottop:
 	cpb	rh6, $0x0f
 	jr	le, ramerr
-	ld	r5, r6
-	lda	rr2, 0x07|0x0000
-1:
-	incb	rh2, $1
-	cp	r2, r5
-	jr	z, march1
-	clr	r3
-	ld	@rr2, $0xaaaa
-	ldl	rr6, rr2
-	add	r7, $0x0002
-	ld	r8, $0x8000
-	ldir	@rr6, @rr2, r8
-	jr	1b
-/ march1 -- pass 1: per segment write a 0x5555 marker word, then verify the
-/ rest of RAM still reads the 0xaaaa background (m1cmp/m1step inner loop).
-march1:
-	lda	rr2, 0x07|0x0000
-m1seg:
-	incb	rh2, $1
-	clr	r3
-	cp	r2, r5
-	jp	z, march2
-	ld	@rr2, $0x5555
-	ld	r9, $0xaaaa
-	ldl	rr6, rr2
-	add	r7, $0x0002
-	ld	r8, $0x7fff
-m1cmp:
-	ld	r4, @rr6
-	cp	r9, r4
-	jp	z, m1step
+	jp	pass
 / ramerr -- report a RAM failure: find the failing bit (expected r9 vs read
 / r4), fold in the segment to a bank:chip code, post it on port 0x001d,
 / format two hex digits, print "RAM ERROR   BANK:CHIP= xx" on the active
@@ -393,33 +366,6 @@ errout:
 	ldb	rl4, $0x0a
 	outb	0x0111, rl4
 	jp	sizeram_
-/ m1step -- march-pass-1 helper: skip the block just verified, resume the
-/ compare (m1cmp) or advance to the next segment (m1seg).
-m1step:
-	ldi	@rr6, @rr2, r8
-	jp	po, m1cmp
-	jp	m1seg
-/ march2 -- pass 2: per segment write a 0xaaaa marker word, verify the rest
-/ of RAM still reads the 0x5555 markers left by pass 1.
-march2:
-	lda	rr2, 0x07|0x0000
-1:
-	incb	rh2, $1
-	clr	r3
-	cp	r2, r5
-	jp	z, pass
-	ld	@rr2, $0xaaaa
-	ld	r9, $0x5555
-	ldl	rr6, rr2
-	add	r7, $0x0002
-	ld	r8, $0x7fff
-2:
-	ld	r4, @rr6
-	cp	r9, r4
-	jp	nz, ramerr
-	ldi	@rr6, @rr2, r8
-	jr	po, 2b
-	jr	1b
 / pass -- memory test passed: restore the cursor, post success code 0x0090
 / on port 0x001d, return to the monitor (e_0090).
 pass:
@@ -433,3 +379,39 @@ pass:
 	ld	r2, $0x0090
 	out	0x001d, r2
 	jp	sizeram_
+/ mfill(segw, val, nwords) -- store val in nwords words from offset 0 of
+/ segment word segw.
+	.globl	mfill_
+mfill_:
+	ld	r2, rr14(4)
+	clr	r3
+	ld	r4, rr14(6)
+	ld	r0, rr14(8)
+	ld	@rr2, r4
+	dec	r0, $1
+	jr	z, 1f
+	ldl	rr4, rr2
+	inc	r5, $2
+	ldir	@rr4, @rr2, r0
+1:
+	ret
+/ mscan(segw, val, nwords) -- check nwords words from offset 0 of segment
+/ word segw against val.  Returns 0, or the bad offset + 2 with the word
+/ read in mgot.
+	.globl	mscan_
+mscan_:
+	ld	r2, rr14(4)
+	clr	r3
+	ld	r4, rr14(6)
+	ld	r0, rr14(8)
+	cpir	r4, @rr2, r0, nz
+	jr	nz, 1f
+	dec	r3, $2
+	ld	r0, @rr2
+	ld	mgot_, r0
+	ld	r1, r3
+	inc	r1, $2
+	ret
+1:
+	clr	r1
+	ret

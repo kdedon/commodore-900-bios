@@ -16,9 +16,8 @@ ROMABI=0x029e
 
 cd "$root"
 mkdir -p build/abi
-sh "$mwc/ld" -i -R 0x00000000 -o build/abi/rom.out crt.o rom.o ramtest.o sio.o \
-	hd.o wd.o boot.o diag.o trap.o conf.o ddt.o hires.o io.o loadseg.o \
-	lceddt.o mbittest.o diagdisp.o porttest.o /lib/libc.a font.o >/dev/null
+objs=$(sed -n '/^OBJECTS=/,/^$/p' Makefile | tr -d '\\' | sed 's/OBJECTS=//')
+sh "$mwc/ld" -i -R 0x00000000 -o build/abi/rom.out $objs /lib/libc.a font.o >/dev/null
 sh "$mwc/run" build/1985root/bin/nm build/abi/rom.out > build/abi/rom.nm 2>/dev/null || :
 
 python3 -I - "$ROMABI" "$out" <<'EOF'
