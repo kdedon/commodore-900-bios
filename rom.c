@@ -98,10 +98,14 @@ command()
                         if (retry == 1)
                                 quiet = 0;
                         r = boot(hdspec);
+#if ROMKB > 32
+                        twait(2000);    /* let the drive spin up */
+#else
                         n = 0x004c4b40;
                         do
                                 --n;
                         while (n != 0);
+#endif
                 }
                 if (r != 0) {
                         chipinit();

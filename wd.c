@@ -69,14 +69,24 @@ register unsigned char *cmd;
         register long n;
         register int c;
 
-        n = 0x000f4240;
         outw(0x0500, 0x0001);           /* controller go */
+#if ROMKB > 32
+        tstart();
+        n = hr_y ? 30000 : 1000;        /* formatting: 300 s, else 10 s */
+        do
+                c = cmd[0x0c];
+        while ((c & 0xff) == 0xff && tnow() < n);
+        tstop();
+        n = (c & 0xff) != 0xff;
+#else
+        n = 0x000f4240;
         if (hr_y)
                 n = 0x01c9c380;         /* formatting: allow 30x longer */
         do {
                 c = cmd[0x0c];
                 --n;
         } while ((c & 0xff) == 0xff && n != 0);
+#endif
         if (n == 0) {
                 if (quiet == 0)
                         puts("\nTIMEOUT ERROR\n");
