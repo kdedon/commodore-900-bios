@@ -83,6 +83,8 @@ char *argv[];
         data = ssize[3] + ssize[4];             /* SHRD + PRVD */
         if (text > DATAAT || data > ROMSIZE - CFGSIZE - DATAAT)
                 fail("bootfix: image too big\n");
+        if (data + ssize[5] > WINDOW * 1024L)
+                fail("bootfix: data and bss exceed WINDOW\n");
         if ((out = creat(argv[2], 0644)) < 0)
                 fail("bootfix: cannot create\n");
         lseek(in, (long)tbase, 0);

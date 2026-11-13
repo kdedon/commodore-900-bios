@@ -5,7 +5,6 @@
  * segment to catch address aliasing.  RAM is left clear.
  */
 
-#define WINDOW  7               /* KB of ROM data at the top of RAM */
 
 extern long   mkfp();
 extern char   abflags[];

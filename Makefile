@@ -20,7 +20,9 @@ RUN=
 # A 32 KB part: make ROMKB=32 ROMDATA=0x6cf0
 ROMKB=64
 ROMDATA=0xe000
-LAYOUT=-DROMKB=$(ROMKB) -DROMDATA=$(ROMDATA)
+# KB at the top of RAM holding the ROM's data, bss and stack.
+WINDOW=12
+LAYOUT=-DROMKB=$(ROMKB) -DROMDATA=$(ROMDATA) -DWINDOW=$(WINDOW)
 
 OPTIONS=-DZ8000HR -DFIVEINCH=1 -DDDT -DAUTOBOOT
 CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
@@ -29,7 +31,7 @@ CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) $(LAYOUT) -I/usr/sys/z8001/h
 LD=$(LDBIN) -i -R 0x00000000 -o rom.out
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
   ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
-  tick.o setup.o xmodem.o porttest.o
+  tick.o setup.o xmodem.o net.o porttest.o
 
 # bootfix flattens the linked l.out to the 32K ROM image in place;
 # `prom rom` then splits it into rom.H (even bytes) + rom.L (odd bytes) for
@@ -105,6 +107,8 @@ setup.o: setup.c romconf.h rom.h Makefile
 	$(CC) setup.c
 xmodem.o: xmodem.c romconf.h rom.h Makefile
 	$(CC) xmodem.c
+net.o: net.c romconf.h rom.h Makefile
+	$(CC) net.c
 porttest.o: porttest.c cioports.h
 	$(CC) porttest.c
 

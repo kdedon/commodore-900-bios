@@ -45,6 +45,7 @@ long    vblocks[NBN+ND];
 extern  int     get_init;
 extern  unsigned xseg;
 extern  char    *xget();
+extern  char    *tftpget();
 extern  char    dbgfmt[];
 
 extern  unsigned        seg;
@@ -128,6 +129,20 @@ register char *s;
                 hdf = fdf = 0;
                 doffset = 0;
                 if ((s = xget(unit)) != 0)
+                        return (s);
+                lbn = 0;
+                return (fsload((struct dinode *)0));
+        }
+        if (dname[0] == 's' && dname[1] == 'l') {
+                unit = 0;
+                if (*s == ',')
+                        for (s++; *s >= '0' && *s <= '9'; s++)
+                                unit = unit*10 + *s - '0';
+                if (*s++ != ')')
+                        return (bootsyn);
+                hdf = fdf = 0;
+                doffset = 0;
+                if ((s = tftpget(unit, s)) != 0)
                         return (s);
                 lbn = 0;
                 return (fsload((struct dinode *)0));

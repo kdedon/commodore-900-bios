@@ -78,6 +78,15 @@ baud, then boots it as if from disk.  It may be up to 192 KB.  Any
 terminal program can send it; under the emulator, `mk/xsend.py SOCKET
 FILE` sends to a port attached with `--wire=SOCKET`.
 
+## Network boot
+
+`(sl,n)file` fetches a load module by TFTP over SLIP on serial port n
+and boots it.  The machine is 10.0.9.2 and the server 10.0.9.1;
+`(sl,n)a.b.c.d:file` names the server, and the machine takes the next
+address up.  On a Unix host, `slattach` and a TFTP server will do;
+under the emulator, `mk/tftpslip.py SOCKET DIR` serves DIR to a port
+attached with `--wire=SOCKET`.
+
 ## It started byte exact
 
 At the 1.0 tag this source, built with the original passes, reproduced

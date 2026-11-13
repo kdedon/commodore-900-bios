@@ -100,7 +100,7 @@ sizeram_:
 	ldb	rh4, rh2
 	ld	r13, r4
 	srl	r13, $2
-	ldk	r0, $7		/ ROM data window, KB
+	ldk	r0, $WINDOW	/ ROM data window, KB
 	nop
 	ld	r1, r13
 	sub	r1, r0

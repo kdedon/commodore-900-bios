@@ -9,6 +9,7 @@
 #	make -f mk/host.mk reloc-check	relink with the code shifted, then boot it
 #	make -f mk/host.mk abi-check	check the service table, write build/romabi.h
 #	make -f mk/host.mk serial-check	boot over serial by XMODEM (64 KB build)
+#	make -f mk/host.mk net-check	boot by TFTP over SLIP (64 KB build)
 #	make -f mk/host.mk clean
 #
 # Every target but `deps' and `clean' recurses into the real Makefile with the
@@ -35,7 +36,7 @@ C900_ROMREF ?=
 TOOLS = CCBIN='sh $(MWC)/cc' ASBIN='sh $(MWC)/as' LDBIN='sh $(MWC)/ld' \
 	CPPBIN='sh $(MWC)/cpp' RUN='sh $(MWC)/run'
 
-.PHONY: rom split check boot-check reloc-check abi-check serial-check stage deps clean
+.PHONY: rom split check boot-check reloc-check abi-check serial-check net-check stage deps clean
 
 rom split clean:
 	$(MAKE) -C $(ROOT) $(TOOLS) $@
@@ -76,3 +77,6 @@ abi-check: rom
 
 serial-check: split
 	sh $(ROOT)/mk/serialcheck.sh
+
+net-check: split
+	sh $(ROOT)/mk/netcheck.sh

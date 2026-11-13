@@ -29,6 +29,7 @@ long    xlen;                   /* bytes received */
 /* SCC ports in the order of the boot info's serial map */
 static unsigned sccbase[] = { 0x0100, 0x0120, 0x0300, 0x0320, 0x0380, 0x03a0 };
 static unsigned ctl, dat;
+char    badport[] = "bad serial port";
 
 /* 9600 8N1 from the 6 MHz clock: register, value */
 static char sccinit[] = {
@@ -37,9 +38,29 @@ static char sccinit[] = {
 };
 
 /*
+ * Use serial port unit, programming it unless it is the console's.
+ * Returns 0 if there is no such port.
+ */
+sport(unit)
+register int unit;
+{
+        register int i;
+
+        if (unit < 0 || unit > 5)
+                return (0);
+        ctl = sccbase[unit] + 1;
+        dat = sccbase[unit] + 0x11;
+        if (unit != 0)
+                for (i = 0; i < sizeof sccinit; i += 2) {
+                        outb(ctl, sccinit[i]);
+                        outb(ctl, sccinit[i + 1]);
+                }
+        return (1);
+}
+
+/*
  * A byte from the port, or -1 after t hundredths.
  */
-static
 rx(t)
 unsigned t;
 {
@@ -53,7 +74,6 @@ unsigned t;
         return (inb(dat) & 0xff);
 }
 
-static
 tx(c)
 int c;
 {
@@ -170,19 +190,10 @@ bad:
  */
 char *
 xget(unit)
-register int unit;
+int unit;
 {
-        register int i;
-
-        if (unit < 0 || unit > 5)
-                return ("bad serial port");
-        ctl = sccbase[unit] + 1;
-        dat = sccbase[unit] + 0x11;
-        if (unit != 0)
-                for (i = 0; i < sizeof sccinit; i += 2) {
-                        outb(ctl, sccinit[i]);
-                        outb(ctl, sccinit[i + 1]);
-                }
+        if (!sport(unit))
+                return (badport);
         puts("Waiting for XMODEM\n");
         xseg = (romconf.rom_eram >> 6) - 1 - XSEGS;
         if ((xlen = xrecv(xseg)) < 0) {
