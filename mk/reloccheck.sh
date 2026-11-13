@@ -18,8 +18,8 @@ C900_ROOT=$root
 emu_need "boot the relinked ROM"
 
 PAD=${PAD:-256}
-# Data objects whose contents only look like text addresses.
-ALLOW=${ALLOW:-dbgfmt}
+# Objects whose contents only look like text addresses.
+ALLOW=${ALLOW:-dbgfmt hrfont}
 mwc=$root/mk/mwc1985
 work=$root/build/reloc
 rm -rf "$work"
@@ -60,26 +60,27 @@ def lout(p):
 at, ad = lout(work + '/a.out')
 bt, bd = lout(work + '/b.out')
 x = len(lout(crt)[0])
-syms, dsyms = {}, []
+syms, dsyms, tsyms = {}, [], []
 for line in open(work + '/a.nm'):
     f = line.split()
     if len(f) == 3 and len(f[0]) == 8:
         v = int(f[0][4:], 16)
-        if f[0][:4] == '0000' and v >= x:
-            syms.setdefault(v, f[2])
+        if f[0][:4] == '0000':
+            tsyms.append((v, f[2]))
+            if v >= x:
+                syms.setdefault(v, f[2])
         elif f[1] in ('PD', 'SD'):
             dsyms.append((v, f[2]))
-dsyms.sort()
-owner = lambda o: max([(v, n) for v, n in dsyms if v <= o] or [(0, None)])[1]
+owner = lambda t, o: max([(v, n) for v, n in t if v <= o] or [(0, None)])[1]
 # A text address is a segment-0 word (0x0000 or 0x8000) and an offset.
 w = lambda s, o: s[o] << 8 | s[o+1]
 ref = lambda s, o: o >= 2 and w(s, o - 2) in (0x0000, 0x8000) and w(s, o) in syms
 bad = []
 for o in range(x, len(at) - 1, 2):
-    if ref(at, o) and w(bt, o + pad) == w(at, o):
+    if ref(at, o) and w(bt, o + pad) == w(at, o) and owner(tsyms, o) not in allow:
         bad.append(('text', o, w(at, o)))
 for o in range(0, len(ad) - 1, 2):
-    if ref(ad, o) and w(bd, o) == w(ad, o) and owner(o) not in allow:
+    if ref(ad, o) and w(bd, o) == w(ad, o) and owner(dsyms, o) not in allow:
         bad.append(('data', o, w(ad, o)))
 for kind, o, v in bad:
     print('reloccheck: %s+%04x holds %04x (%s) unrelocated' % (kind, o, v, syms[v]))

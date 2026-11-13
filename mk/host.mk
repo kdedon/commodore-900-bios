@@ -7,6 +7,7 @@
 #	make -f mk/host.mk check	split, then md5 both halves against V1.0
 #	make -f mk/host.mk boot-check	split, then boot what was built
 #	make -f mk/host.mk reloc-check	relink with the code shifted, then boot it
+#	make -f mk/host.mk abi-check	check the service table, write build/romabi.h
 #	make -f mk/host.mk clean
 #
 # Every target but `deps' and `clean' recurses into the real Makefile with the
@@ -33,7 +34,7 @@ C900_ROMREF ?=
 TOOLS = CCBIN='sh $(MWC)/cc' ASBIN='sh $(MWC)/as' LDBIN='sh $(MWC)/ld' \
 	CPPBIN='sh $(MWC)/cpp' RUN='sh $(MWC)/run'
 
-.PHONY: rom split check boot-check reloc-check stage deps clean
+.PHONY: rom split check boot-check reloc-check abi-check stage deps clean
 
 rom split clean:
 	$(MAKE) -C $(ROOT) $(TOOLS) $@
@@ -67,3 +68,7 @@ boot-check: split
 # Shift the code past crt.o and require the ROM to still work.
 reloc-check: split
 	sh $(ROOT)/mk/reloccheck.sh
+
+# The service table must stay where callers expect it.
+abi-check: rom
+	sh $(ROOT)/mk/abicheck.sh

@@ -304,6 +304,67 @@ pclear_:
 	ret
 
 / ----------------------------------------------------------------------------
+/ romabi -- ROM services for loaded programs, at a fixed address: everything
+/ before it is frozen.  Header, then one 8-byte slot per service; call slot n
+/ at romabi+16+8n.  romvars points to the ROM's variable addresses.  Both
+/ lists only grow.
+/ ----------------------------------------------------------------------------
+	.globl	romabi_
+romabi_:
+	.ascii	"C9JT"
+	.word	1		/ version
+#if ROMKB > 32
+	.word	20		/ services
+#else
+	.word	19
+#endif
+	.long	romvars_
+	.word	11		/ variables
+	.word	0
+	jp	putchar_
+	.word	0
+	jp	getchar_
+	.word	0
+	jp	puts_
+	.word	0
+	jp	wdgo_
+	.word	0
+	jp	wdread_
+	.word	0
+	jp	iread_
+	.word	0
+	jp	dirlook_
+	.word	0
+	jp	vread_
+	.word	0
+	jp	fsload_
+	.word	0
+	jp	fload_
+	.word	0
+	jp	jmp_
+	.word	0
+	jp	segload_
+	.word	0
+	jp	ldirb_
+	.word	0
+	jp	pclear_
+	.word	0
+	jp	inb_
+	.word	0
+	jp	outb_
+	.word	0
+	jp	chipinit_
+	.word	0
+	jp	hrkey_
+	.word	0
+	jp	hrdecode_
+	.word	0
+#if ROMKB > 32
+	jp	conpoll_
+	.word	0
+#endif
+
+/ ----------------------------------------------------------------------------
 / Trap / interrupt handlers.  Each vectored entry pushes a
 / one-word trap identifier and falls into the common dispatcher at trapcom, which
 / saves the full register file + the normal-stack pointer, reads the MMU/trap

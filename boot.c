@@ -42,6 +42,8 @@ char    *dirlook();
 struct dinode *iread();
 static  char    buf[512];               /* sector buffer */
 long    vblocks[NBN+ND];
+extern  int     get_init;
+extern  char    dbgfmt[];
 
 extern  unsigned        seg;
 extern  int     hdf;                    /* booting from hard disk */
@@ -51,6 +53,24 @@ extern  int     hdf;                    /* booting from hard disk */
 extern  char    dname[2];               /* parsed device name */
 extern  char    namebuf[DIRSIZ];        /* directory name scan buffer */
 extern        outstr();
+
+/*
+ * Addresses of ROM state a loaded program may use, listed by romabi.
+ * Append only.
+ */
+char    *romvars[] = {
+        (char *)&romconf,
+        (char *)&unit,
+        (char *)&doffset,
+        (char *)&dread,
+        (char *)&hdf,
+        (char *)&fdf,
+        buf,
+        (char *)&get_init,
+        &dbgfmt[0x12],          /* video cursor */
+        &ddtvars.d_conlr,
+        (char *)vblocks,
+};
 
 /*
  * Configuration of devices known to

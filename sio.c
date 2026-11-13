@@ -40,6 +40,29 @@ register char c;
         splx(s);
 }
 
+#if ROMKB > 32
+/*
+ * A character from the console, or 0 if none is waiting.  No echo.
+ */
+conpoll()
+{
+        register int c;
+
+        if (con_hr || con_lr) {
+                if (get_init == 0) {
+                        chipinit();
+                        get_init++;
+                }
+                if ((c = hrkey()) == 0)
+                        return (0);
+                return (hrdecode(c));
+        }
+        if ((inb(0x0101) & 0x01) == 0)
+                return (0);
+        return (inb(0x0111) & 0x7f);
+}
+#endif
+
 int
 getchar()
 {

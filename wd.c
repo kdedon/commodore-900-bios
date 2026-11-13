@@ -47,7 +47,7 @@ int drivetype = 2;              /* current drive type index */
 /*
  * Start the controller on the given command block and spin on the
  * completion byte, counting down a timeout (a much longer one while
- * a format is in progress).
+ * a format is in progress).  Returns the status, 0xff on a timeout.
  */
 wdgo(cmd)
 register unsigned char *cmd;
@@ -69,6 +69,7 @@ register unsigned char *cmd;
                 ++nerr;
         }
         outw(0x0500, 0x0000);
+        return (c & 0xff);
 }
 
 /*

@@ -69,6 +69,16 @@ jobs:
           C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
         run: make -f mk/host.mk boot-check
 
+      - name: Check the service table
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk abi-check
+
+      - name: Boot it with the code shifted
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk reloc-check
+
       # The halves, off every green push: a stranger should not have to build a
       # 1985 toolchain to get an EPROM image.
       - uses: actions/upload-artifact@v4
@@ -77,6 +87,7 @@ jobs:
           path: |
             rom.H
             rom.L
+            build/romabi.h
 
       - name: The link map, when it does not build
         if: failure()
