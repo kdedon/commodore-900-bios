@@ -112,6 +112,10 @@ char *buf;
         register int i;
         int tries = 0;
 
+#if ROMKB > 32
+        if (unit >= 4)
+                return (ndread(unit, block, buf));
+#endif
         if (unit < 0 || unit > 3) {
                 puts("bad parameters in wdread\n");
                 return ++nerr;

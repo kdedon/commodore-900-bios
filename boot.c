@@ -46,6 +46,7 @@ extern  int     get_init;
 extern  unsigned xseg;
 extern  char    *xget();
 extern  char    *tftpget();
+extern  char    *ndopen();
 extern  char    dbgfmt[];
 
 extern  unsigned        seg;
@@ -82,6 +83,9 @@ char    *romvars[] = {
 int     hdload();
 int     wdread();
 int     fdload();
+#if ROMKB > 32
+static char raw;                /* read the l.out from block 0 on */
+#endif
 
 char    ldebug = 0;             /* load file, don't boot it */
 struct devs {
@@ -119,6 +123,7 @@ register char *s;
                         break;
 #if ROMKB > 32
         xseg = 0;
+        raw = 0;
         if (dname[0] == 's' && dname[1] == 'x') {
                 unit = 0;
                 if (*s == ',')
@@ -131,6 +136,19 @@ register char *s;
                 if ((s = xget(unit)) != 0)
                         return (s);
                 lbn = 0;
+                return (fsload((struct dinode *)0));
+        }
+        if (dname[0] == 'l' && dname[1] == 'e') {
+                if (*s++ != ')')
+                        return (bootsyn);
+                hdf = fdf = 0;
+                doffset = 0;
+                unit = 4;
+                dread = wdread;
+                if ((s = ndopen(s)) != 0)
+                        return (s);
+                lbn = 0;
+                raw = 1;
                 return (fsload((struct dinode *)0));
         }
         if (dname[0] == 's' && dname[1] == 'l') {
@@ -365,7 +383,7 @@ struct dinode *dip;
         segload(LDSEG, code, data);
 #if ROMKB > 32
         wdgeom(&cyl, &heads, &secs);
-        rcboot(&romconf, dname, fdf ? unit - 2 : unit, doffset, cyl, heads, secs);
+        rcboot(&romconf, dname, fdf ? unit - 2 : unit & 3, doffset, cyl, heads, secs);
 #endif
         if (ldebug) {
                 outstr("\nStart address : ");
@@ -475,6 +493,8 @@ vread()
 #if ROMKB > 32
         if (xseg)
                 return (xread(lbn++, buf));
+        if (raw)
+                return (bread(buf, (long)lbn++));
 #endif
         if (lbn >= ND+NBN)
                 return (0);             /* past the single indirect block */

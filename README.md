@@ -87,6 +87,12 @@ address up.  On a Unix host, `slattach` and a TFTP server will do;
 under the emulator, `mk/tftpslip.py SOCKET DIR` serves DIR to a port
 attached with `--wire=SOCKET`.
 
+`(le)[server:]file` boots a file over the LANCE card through the card's
+own boot ROM, which the ROM finds in the card's window, copies to RAM
+and starts at power-on.  The card ROM does the networking; `n` shows
+its address and configuration.  `romcfg.py --cardrom off`, or setup
+item 4, leaves the card ROM alone.
+
 ## Terminal
 
 `t [n]` at the monitor prompt connects the console to serial port n

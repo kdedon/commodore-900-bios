@@ -8,7 +8,7 @@
 The defaults are 16 bytes at the end of a 64 KB image: "C9DF", version 1,
 memory test (0 full, 1 skip), boot order (0 floppy then hard disk, 1 hard
 disk, 2 floppy, 3 monitor), hard disk type 0-3, wait for C in tenths of a
-second, and a checksum word that makes the 16-bit words sum to 0.
+second, network card ROM (0 on, 1 off), and a checksum word that makes the 16-bit words sum to 0.
 """
 import argparse
 import sys
@@ -40,12 +40,13 @@ def valid(blk):
 
 def show(blk):
     if not valid(blk):
-        print('built-in defaults: full memory test, boot fd-hd, disk 2 (4-head 20MB), wait 1.0 s')
+        print('built-in defaults: full memory test, boot fd-hd, disk 2 (4-head 20MB), wait 1.0 s, card ROM on')
         return
     print('memory test: %s' % ('skip' if blk[5] else 'full'))
     print('boot:        %s' % BOOT[blk[6]] if blk[6] < 4 else 'boot:        ?')
     print('disk:        %d (%s)' % (blk[7], DISKS[blk[7]]) if blk[7] < 4 else 'disk:        ?')
     print('wait for C:  %.1f s' % ((blk[8] or 10) / 10))
+    print('card ROM:    %s' % ('off' if blk[9] else 'on'))
 
 
 def main():
@@ -56,6 +57,7 @@ def main():
     ap.add_argument('--boot', choices=BOOT)
     ap.add_argument('--disk', type=int, choices=range(4))
     ap.add_argument('--wait', type=int, help='tenths of a second, 1-255')
+    ap.add_argument('--cardrom', choices=['on', 'off'], help='run the network card ROM')
     ap.add_argument('--reset', action='store_true', help='remove the block')
     a = ap.parse_args()
 
@@ -66,7 +68,7 @@ def main():
         save(img, a.high, a.low)
         show(bytes(16))
         return
-    if not any(v is not None for v in (a.memtest, a.boot, a.disk, a.wait)):
+    if not any(v is not None for v in (a.memtest, a.boot, a.disk, a.wait, a.cardrom)):
         show(blk)
         return
     if not valid(blk):
@@ -81,6 +83,8 @@ def main():
         if not 1 <= a.wait <= 255:
             sys.exit('romcfg: --wait is 1-255 tenths')
         blk[8] = a.wait
+    if a.cardrom:
+        blk[9] = a.cardrom == 'off'
     blk[14:16] = b'\0\0'
     ck = -sum(words(blk)) & 0xffff
     blk[14:16] = bytes([ck >> 8, ck & 0xff])

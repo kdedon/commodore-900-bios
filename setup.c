@@ -25,6 +25,7 @@ char    skipmem;                /* size memory without testing it */
 static char cwait = 10;         /* tenths of a second for C after the tests */
 
 extern long   mkfp();
+extern char   cardoff;
 
 #define BO_BOTH 0               /* floppy, then hard disk */
 #define BO_HD   1
@@ -37,8 +38,8 @@ static char *order[] = { "floppy, then hard disk", "hard disk", "floppy",
 /*
  * Defaults from the block romcfg writes at the end of the image: "C9DF",
  * version 1, memory test, boot order (3: monitor), hard disk type, wait
- * for C in tenths, and a checksum word making the words sum to 0.  A
- * block that does not check out is ignored.
+ * for C in tenths, network card ROM (1: off), and a checksum word making
+ * the words sum to 0.  A block that does not check out is ignored.
  */
 cfgload()
 {
@@ -61,6 +62,7 @@ cfgload()
                 drivetype = p[7];
         if (p[8] != 0)
                 cwait = p[8];
+        cardoff = p[9] != 0;
 }
 
 /*
@@ -102,6 +104,10 @@ menu()
                 puts(order[bootord]);
                 puts("\n  3  Hard disk: ");
                 puts(hdpar[drivetype].hd_type);
+                if (romconf.rc_net & RN_LANCE) {
+                        puts("\n  4  Network card ROM: ");
+                        puts(cardoff ? "off" : "on");
+                }
                 puts("\n");
                 puts("  C  Continue\n> ");
                 c = getchar();
@@ -115,6 +121,9 @@ menu()
                         break;
                 case '3':
                         drivetype = (drivetype + 1) % 4;
+                        break;
+                case '4':
+                        cardoff = !cardoff;
                         break;
                 case 'c':
                 case 'C':

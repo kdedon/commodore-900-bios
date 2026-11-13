@@ -32,6 +32,8 @@ char    *msgs[] = {
 #if ROMKB > 32
         "(sx,n)         boot a file sent by XMODEM to serial port n\n",
         "(sl,n)[ip:]file  boot file by TFTP over SLIP on serial port n\n",
+        "(le)[ip:]file  boot file by TFTP over the network card\n",
+        "n              show the network card\n",
         "t [n]          terminal on serial port n (Ctrl-] q quits)\n",
 #endif
         "\n",
@@ -84,6 +86,7 @@ unsigned low, hi;
 #if ROMKB > 32
         if (!burnin)
                 setup();
+        cardrom();
 #endif
         if (multmic())
                 command();
@@ -206,6 +209,9 @@ prompt:
 #if ROMKB > 32
                 case 't':
                         term((int)getaddr(&line[1], 1L));
+                        continue;
+                case 'n':
+                        ndinfo();
                         continue;
 #endif
                 default:
