@@ -19,7 +19,7 @@ emu_need "boot the relinked ROM"
 
 PAD=${PAD:-256}
 # Objects whose contents only look like text addresses.
-ALLOW=${ALLOW:-dbgfmt hrfont}
+ALLOW=${ALLOW:-dbgfmt hrfont msg_rparen}
 mwc=$root/mk/mwc1985
 work=$root/build/reloc
 rm -rf "$work"
@@ -68,7 +68,7 @@ for line in open(work + '/a.nm'):
             tsyms.append((v, f[2]))
             if v >= x:
                 syms.setdefault(v, f[2])
-        elif f[1] in ('PD', 'SD'):
+        elif f[1].upper() in ('PD', 'SD'):
             dsyms.append((v, f[2]))
 owner = lambda t, o: max([(v, n) for v, n in t if v <= o] or [(0, None)])[1]
 # A text address is a segment-0 word (0x0000 or 0x8000) and an offset.

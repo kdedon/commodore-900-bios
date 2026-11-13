@@ -29,6 +29,11 @@ char    *msgs[] = {
         "d              run debugger\n",
         "S <n>          set hard disk parameters to type <n>\n",
         "P <unit>       park hard disk <unit> heads over shipping zone\n",
+#if ROMKB > 32
+        "(sx,n)         boot a file sent by XMODEM to serial port n\n",
+        "(sl,n)[ip:]file  boot file by TFTP over SLIP on serial port n\n",
+        "t [n]          terminal on serial port n (Ctrl-] q quits)\n",
+#endif
         "\n",
 };
 int     manualdone = 0;
@@ -50,6 +55,7 @@ extern        port_test();
 extern        configure();
 extern int    multmic();
 extern char   bootord;
+addr_t        getaddr();
 extern        kill();
 extern        ramtest();
 extern        debugger();
@@ -197,6 +203,11 @@ prompt:
                 case 'd':
                         debugger();
                         continue;
+#if ROMKB > 32
+                case 't':
+                        term((int)getaddr(&line[1], 1L));
+                        continue;
+#endif
                 default:
                         putchar(line[0]);
                         puts(": bad command\n");

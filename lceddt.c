@@ -183,10 +183,10 @@ selftest()
 			walkbit(t->t_port, t->t_val);
 			break;
 		case 1:
-			drain();
 			curchip = t->t_val;
 			outstr(chipnames[curchip]);
 			outstr(" register test: ");
+			drain();
 			break;
 		case 2:
 			romconf.rom_ctype = 1;

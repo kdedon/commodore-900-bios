@@ -31,7 +31,7 @@ CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) $(LAYOUT) -I/usr/sys/z8001/h
 LD=$(LDBIN) -i -R 0x00000000 -o rom.out
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
   ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
-  tick.o setup.o xmodem.o net.o porttest.o
+  tick.o setup.o xmodem.o net.o term.o porttest.o
 
 # bootfix flattens the linked l.out to the 32K ROM image in place;
 # `prom rom` then splits it into rom.H (even bytes) + rom.L (odd bytes) for
@@ -109,6 +109,8 @@ xmodem.o: xmodem.c romconf.h rom.h Makefile
 	$(CC) xmodem.c
 net.o: net.c romconf.h rom.h Makefile
 	$(CC) net.c
+term.o: term.c romconf.h rom.h ddtvars.h Makefile
+	$(CC) term.c
 porttest.o: porttest.c cioports.h
 	$(CC) porttest.c
 

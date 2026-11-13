@@ -87,6 +87,13 @@ address up.  On a Unix host, `slattach` and a TFTP server will do;
 under the emulator, `mk/tftpslip.py SOCKET DIR` serves DIR to a port
 attached with `--wire=SOCKET`.
 
+## Terminal
+
+`t [n]` at the monitor prompt connects the console to serial port n
+(default 1) as a dumb terminal at 9600 baud.  Ctrl-] then q quits, e
+toggles local echo, b steps the rate (9600, 18750, 37500), and a second
+Ctrl-] sends one.
+
 ## It started byte exact
 
 At the 1.0 tag this source, built with the original passes, reproduced

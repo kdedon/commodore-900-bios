@@ -31,6 +31,9 @@ static unsigned sccbase[] = { 0x0100, 0x0120, 0x0300, 0x0320, 0x0380, 0x03a0 };
 static unsigned ctl, dat;
 char    badport[] = "bad serial port";
 
+/* Register n of a channel is at its base + 1 + 2n. */
+#define wr(n, v)        outb(ctl + 2 * (n), v)
+
 /* 9600 8N1 from the 6 MHz clock: register, value */
 static char sccinit[] = {
         4, 0x44, 3, 0xc0, 5, 0x60, 11, 0x50, 12, 17, 13, 0,
@@ -51,10 +54,8 @@ register int unit;
         ctl = sccbase[unit] + 1;
         dat = sccbase[unit] + 0x11;
         if (unit != 0)
-                for (i = 0; i < sizeof sccinit; i += 2) {
-                        outb(ctl, sccinit[i]);
-                        outb(ctl, sccinit[i + 1]);
-                }
+                for (i = 0; i < sizeof sccinit; i += 2)
+                        wr(sccinit[i], sccinit[i + 1]);
         return (1);
 }
 
@@ -72,6 +73,33 @@ unsigned t;
                 }
         tstop();
         return (inb(dat) & 0xff);
+}
+
+/*
+ * A byte from the port, or -1 if none is waiting.
+ */
+rxpoll()
+{
+        if (inb(ctl) & 0x01)
+                return (inb(dat) & 0xff);
+        return (-1);
+}
+
+/* Raise or drop RTS, which asks the far end to send or to wait. */
+setrts(on)
+int on;
+{
+        wr(5, on ? 0xea : 0xe8);
+}
+
+/* Baud rate time constant, x16 from the 6 MHz clock: 17 is 9600. */
+setbaud(tc)
+int tc;
+{
+        wr(14, 0x02);
+        wr(12, tc);
+        wr(13, 0);
+        wr(14, 0x03);
 }
 
 tx(c)

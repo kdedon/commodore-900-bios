@@ -71,9 +71,8 @@ drain()
 {
         if (con_hr || con_lr)
                 return;
-        do
-                outb(0x0101, 1);
-        while ((inb(0x0101) & 0x01) == 0);      /* RR1 All Sent */
+        while ((inb(0x0103) & 0x01) == 0)       /* RR1 All Sent */
+                ;
 }
 
 int
