@@ -43,6 +43,8 @@ struct dinode *iread();
 static  char    buf[512];               /* sector buffer */
 long    vblocks[NBN+ND];
 extern  int     get_init;
+extern  unsigned xseg;
+extern  char    *xget();
 extern  char    dbgfmt[];
 
 extern  unsigned        seg;
@@ -114,6 +116,23 @@ register char *s;
         for (dp = devs; dp < &devs[NDEV]; dp++)
                 if (dp->dv_name[0]==dname[0] && dp->dv_name[1]==dname[1])
                         break;
+#if ROMKB > 32
+        xseg = 0;
+        if (dname[0] == 's' && dname[1] == 'x') {
+                unit = 0;
+                if (*s == ',')
+                        for (s++; *s >= '0' && *s <= '9'; s++)
+                                unit = unit*10 + *s - '0';
+                if (*s != ')')
+                        return (bootsyn);
+                hdf = fdf = 0;
+                doffset = 0;
+                if ((s = xget(unit)) != 0)
+                        return (s);
+                lbn = 0;
+                return (fsload((struct dinode *)0));
+        }
+#endif
         if (dp == &devs[NDEV])
                 return (baddev);
         hdf = 0;
@@ -282,6 +301,11 @@ struct dinode *dip;
         bis = lp->l_ssize[L_BSSI];
         is = lp->l_ssize[L_SHRI] + lp->l_ssize[L_PRVI];
         ds = lp->l_ssize[L_SHRD] + lp->l_ssize[L_PRVD];
+#if ROMKB > 32
+        if (xseg && code + (((long)is + bis + ds + bds + 0x3ff) >> 8)
+            > (long)xseg << 8)
+                return ("image too big for serial boot");
+#endif
         /* BSSI + roundup to 512-byte click boundary */
         bis += 1024 - (bis+is)%1024;
 #if      LADDR
@@ -433,6 +457,10 @@ vread()
 {
         long pb;
 
+#if ROMKB > 32
+        if (xseg)
+                return (xread(lbn++, buf));
+#endif
         if (lbn >= ND+NBN)
                 return (0);             /* past the single indirect block */
         if ((pb = vblocks[lbn]) == 0) {

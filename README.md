@@ -69,6 +69,15 @@ from live in the last 16 bytes of a 64 KB image and are set on a host:
 `--boot` is `fd-hd`, `hd`, `fd` or `monitor`; `--wait` is how long, in
 tenths of a second, the ROM waits for C after the tests.
 
+## Serial boot
+
+`(sx,n)` at the monitor prompt receives a load module by XMODEM (CRC or
+checksum, 128- or 1024-byte blocks) on serial port n -- 0 is the console
+port, 1 the motherboard's channel A, 2-5 the lo-res board's -- at 9600
+baud, then boots it as if from disk.  It may be up to 192 KB.  Any
+terminal program can send it; under the emulator, `mk/xsend.py SOCKET
+FILE` sends to a port attached with `--wire=SOCKET`.
+
 ## It started byte exact
 
 At the 1.0 tag this source, built with the original passes, reproduced
