@@ -17,15 +17,15 @@ RUN=
 
 # Data sits at ROMDATA in the image.  Reset copies it up to ldrbuf, which
 # must stay the last initialised object (porttest.o links last).
-# A 32 KB part: make ROMSIZE=0x8000L ROMDATA=0x6c40
-ROMSIZE=0x10000L
+# A 32 KB part: make ROMKB=32 ROMDATA=0x6cf0
+ROMKB=64
 ROMDATA=0xe000
-LAYOUT=-DROMSIZE=$(ROMSIZE) -DROMDATA=$(ROMDATA)
+LAYOUT=-DROMKB=$(ROMKB) -DROMDATA=$(ROMDATA)
 
 OPTIONS=-DZ8000HR -DFIVEINCH=1 -DDDT -DAUTOBOOT
 CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
   -DBUFPADDR="(0x8000400L)"
-CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) -I/usr/sys/z8001/h
+CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) $(LAYOUT) -I/usr/sys/z8001/h
 LD=$(LDBIN) -i -R 0x00000000 -o rom.out
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
   ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
@@ -49,6 +49,8 @@ prom: prom.c Makefile
 
 font.o: font.s
 	$(ASBIN) -go font.o font.s
+
+rom.o boot.o conf.o sio.o hd.o wd.o lceddt.o porttest.o memtest.o: romconf.h ddtvars.h rom.h Makefile
 
 rom.o: rom.c
 	$(CC) rom.c
@@ -95,7 +97,7 @@ diagdisp.o: diagdisp.s
 	$(CPPBIN) -E -DNLD -DDDT diagdisp.s >diagdisp.i
 	$(ASBIN) -gox diagdisp.o diagdisp.i
 	rm -f diagdisp.i
-memtest.o: memtest.c
+memtest.o: memtest.c Makefile
 	$(CC) memtest.c
 porttest.o: porttest.c cioports.h
 	$(CC) porttest.c

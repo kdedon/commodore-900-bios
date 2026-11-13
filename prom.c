@@ -3,6 +3,7 @@
  * programmer: rom.H = even bytes (D15:D8), rom.L = odd bytes (D7:D0).
  */
 
+#define ROMSIZE ((long)ROMKB * 1024)
 #define CHUNK   8192
 #define NCHUNK  (int)(ROMSIZE / CHUNK)
 

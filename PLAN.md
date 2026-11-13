@@ -90,7 +90,7 @@ free under its 0x4000 cap.
      how to make room with the user.  The emulator also needs the larger
      ROM.
    - **Two builds, not runtime detection.**  The default is 64 KB, with
-     data at 0xE000.  `make ROMSIZE=0x8000L ROMDATA=0x6c40` builds for a
+     data at 0xE000.  `make ROMKB=32 ROMDATA=0x6cf0` builds for a
      32 KB pair, and features that don't fit are left out of that build.
      A 64 KB image can't be put on 32 KB parts anyway.
    - **Emulator:** `commodore-900-emulator` branch `rom64` (ae91510)
@@ -215,27 +215,28 @@ struct romconf {                 /* offsets in bytes */
     char     rc_magic[4];        /* 16  "C9RC" */
     unsigned rc_version;         /* 20  1 */
     unsigned rc_length;          /* 22  bytes, from offset 0 */
-    long     rc_cpuhz;           /* 24  measured */
-    unsigned rc_romver;          /* 28  BCD, e.g. 0x0200 */
-    unsigned rc_video;           /* 30  presence: 1 LR, 2 HR, 4 LC */
-    unsigned rc_hr404;           /* 32  raw 404H word (0 if no HR) */
-    char     rc_lcid, rc_lcver;  /* 34  0xC1, status & 3 */
-    char     rc_console;         /* 36  BI_CON_* code */
-    char     rc_conchan;         /* 37  SCC channel when serial */
-    unsigned rc_serial;          /* 38  bi_serial bitmap */
-    unsigned rc_nram;            /* 40 */
-    struct { char seg, nseg; } rc_ram[16];   /* 42  same order as bi_ram */
-    char     rc_badseg[32];      /* 74  bit per 64 KB seg */
-    unsigned rc_hdcyl;           /* 106 */
-    char     rc_hdheads, rc_hdsec; /* 108 */
-    char     rc_bootdev[2];      /* 110 "hd"/"fd" */
-    char     rc_bootunit, rc_pad;/* 112 */
-    long     rc_bootoff;         /* 114 */
-    char     rc_rsvd_seg;        /* 118 first ROM-owned 64 KB seg */
-    char     rc_rsvd_nseg;       /* 119 count */
-    unsigned rc_config;          /* 120 effective setup-menu bits */
-    unsigned rc_cksum;           /* 122 word sum, offsets 16..rc_length-2 */
-};                               /* 124 */
+    unsigned rc_romver;          /* 24  BCD, e.g. 0x0200 */
+    unsigned rc_video;           /* 26  presence: 1 LR, 2 HR, 4 LC */
+    unsigned rc_hr404;           /* 28  raw 404H word (0 if no HR) */
+    char     rc_lcid, rc_lcver;  /* 30  0xC1, status & 3 */
+    char     rc_console;         /* 32  BI_CON_* code */
+    char     rc_conchan;         /* 33  SCC channel when serial */
+    unsigned rc_serial;          /* 34  bi_serial bitmap */
+    unsigned rc_nram;            /* 36 */
+    struct { char seg, nseg; } rc_ram[16];   /* 38  same order as bi_ram */
+    char     rc_badseg[32];      /* 70  bit per 64 KB seg */
+    unsigned rc_hdcyl;           /* 102 */
+    char     rc_hdheads, rc_hdsec; /* 104 */
+    char     rc_bootdev[2];      /* 106 "hd"/"fd" */
+    char     rc_bootunit, rc_pad;/* 108 */
+    long     rc_bootoff;         /* 110 */
+    char     rc_rsvd_seg;        /* 114 64 KB seg the ROM uses until the loaded program runs */
+    char     rc_rsvd_nseg;       /* 115 count */
+    unsigned rc_config;          /* 116 effective setup-menu bits */
+    unsigned rc_cksum;           /* 118 word sum, offsets 16..rc_length-2 */
+    unsigned rc_net;             /* 120 1: Am7990 LANCE fitted */
+    unsigned rc_mac[3];          /* 122 LANCE address, byte 0 in the high half */
+};                               /* 128 */
 ```
 
 kernel3 reviewed this layout on 2026-11-12.
@@ -274,9 +275,10 @@ kernel3 reviewed this layout on 2026-11-12.
 
 - **`wdgo2`:** returns the controller status, with a timeout.  kboot's
   `setgeom` waits by hand today.
-- **Timing:** a calibrated `delay_us`/tick routine, built on a CIO
-  counter, which runs on the fixed 6 MHz clock.  The result is
-  `rc_cpuhz`.  Every hard-coded spin moves to it:
+- **Timing:** waits count ticks of a CIO counter, which runs from the
+  fixed 6 MHz clock at any CPU speed.  The CPU clock itself is not
+  measured or handed over (user decision, 2026-11-13).  Every
+  hard-coded spin moves to it:
   - `wd.c:58,61`;
   - the 5M-count hard-disk retry in `rom.c:103-106`;
   - the "OI" window in `lkcrt.s:175`.

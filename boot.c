@@ -242,6 +242,7 @@ struct dinode *dip;
         register struct ldheader *lp;
         register int i;
         long len;
+        int cyl, heads, secs;
 
         if (vread() == 0)
                 return (badlout);
@@ -323,6 +324,10 @@ struct dinode *dip;
                 place((char *)0, &s, &o, (unsigned)(len - (len >> 1)));
         }
         segload(LDSEG, code, data);
+#if ROMKB > 32
+        wdgeom(&cyl, &heads, &secs);
+        rcboot(&romconf, dname, fdf ? unit - 2 : unit, doffset, cyl, heads, secs);
+#endif
         if (ldebug) {
                 outstr("\nStart address : ");
                 puthex((long)LDSEG, 4);

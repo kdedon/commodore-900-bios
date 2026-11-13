@@ -4,6 +4,7 @@
  * byte (shorts low-first, longs high word first).
  */
 
+#define ROMSIZE ((long)ROMKB * 1024)
 #define CHUNK   4096
 #define DATAAT  ((long)(unsigned)ROMDATA)
 

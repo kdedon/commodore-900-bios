@@ -45,6 +45,20 @@ struct dpar dparam[] = {        /* drive geometry, indexed by drivetype */
 int drivetype = 2;              /* current drive type index */
 
 /*
+ * The current drive type's geometry.
+ */
+wdgeom(cyl, heads, secs)
+int *cyl, *heads, *secs;
+{
+        register struct dpar *q;
+
+        q = &dparam[drivetype];
+        *cyl = ((q->hc & 0x0f) << 8) | (q->cyl_lo & 0xff);
+        *heads = (q->hc >> 4) & 0x0f;
+        *secs = q->secs & 0xff;
+}
+
+/*
  * Start the controller on the given command block and spin on the
  * completion byte, counting down a timeout (a much longer one while
  * a format is in progress).  Returns the status, 0xff on a timeout.
