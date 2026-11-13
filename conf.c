@@ -14,6 +14,8 @@ extern        outw();
 extern int    inb();
 extern        outb();
 extern char   segok[], segbad[];
+extern char   skipmem, bootord;
+extern int    drivetype;
 
 configure(rp, ramlow, ramhigh)
 register struct romconf *rp;
@@ -174,6 +176,7 @@ long off;
 	rp->rc_hdcyl = cyl;
 	rp->rc_hdheads = heads;
 	rp->rc_hdsec = secs;
+	rp->rc_config = skipmem | bootord << 1 | drivetype << 4;
 	rcseal(rp);
 }
 

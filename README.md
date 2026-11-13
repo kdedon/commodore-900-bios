@@ -56,6 +56,19 @@ fails with "invalid path".  That is accepted rather than worked around:
 the name is what the reproduced sources `#include`, CI is Linux, and no
 Windows binary is published.  Build in WSL or a container.
 
+## Defaults
+
+Press C during the power-on tests for a setup menu; Space skips the
+memory test.  Menu choices last for one boot.  The defaults it starts
+from live in the last 16 bytes of a 64 KB image and are set on a host:
+
+    python3 mk/romcfg.py rom.H rom.L                  # show
+    python3 mk/romcfg.py rom.H rom.L --memtest skip --boot hd --disk 2
+    python3 mk/romcfg.py rom.H rom.L --reset
+
+`--boot` is `fd-hd`, `hd`, `fd` or `monitor`; `--wait` is how long, in
+tenths of a second, the ROM waits for C after the tests.
+
 ## It started byte exact
 
 At the 1.0 tag this source, built with the original passes, reproduced

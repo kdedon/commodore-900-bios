@@ -34,7 +34,7 @@ struct	romconf	{
 	long	rc_bootoff;
 	char	rc_rsvd_seg;	/* RAM the ROM uses until the program it loads runs */
 	char	rc_rsvd_nseg;
-	unsigned rc_config;
+	unsigned rc_config;	/* 1 no memory test, 6 boot order, 0x30 disk type */
 	unsigned rc_cksum;	/* words from rc_magic on sum to 0 */
 	unsigned rc_net;	/* RN_LANCE */
 	unsigned rc_mac[3];	/* LANCE address, first byte high */

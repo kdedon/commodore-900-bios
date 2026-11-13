@@ -49,6 +49,7 @@ extern        selftest();
 extern        port_test();
 extern        configure();
 extern int    multmic();
+extern char   bootord;
 extern        kill();
 extern        ramtest();
 extern        debugger();
@@ -63,6 +64,9 @@ extern        wdpark();
 main(low, hi)
 unsigned low, hi;
 {
+#if ROMKB > 32
+        cfgload();
+#endif
         if (!burnin)
                 memtest(low, hi);
         if (!burnin)
@@ -71,6 +75,10 @@ unsigned low, hi;
                 port_test();
         configure(&romconf, low, hi);
         chipinit();
+#if ROMKB > 32
+        if (!burnin)
+                setup();
+#endif
         if (multmic())
                 command();
         if (burnin)
@@ -93,8 +101,14 @@ command()
         if (fdspec != 0 && abrt5 == 0 && burnin == 0) {
                 quiet = 0xff;
                 puts("Automatic boot in progress\n");
+#if ROMKB > 32
+                if (bootord != 1)
+                        r = boot(fdspec);
+                for (retry = 0; retry < 2 && bootord != 2; retry++) {
+#else
                 r = boot(fdspec);
                 for (retry = 0; retry < 2; retry++) {
+#endif
                         if (retry == 1)
                                 quiet = 0;
                         r = boot(hdspec);

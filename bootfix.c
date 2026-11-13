@@ -7,6 +7,7 @@
 #define ROMSIZE ((long)ROMKB * 1024)
 #define CHUNK   4096
 #define DATAAT  ((long)(unsigned)ROMDATA)
+#define CFGSIZE 16                      /* defaults block at the very end */
 
 char    buf[CHUNK];
 char    hdr[44];
@@ -76,7 +77,7 @@ char *argv[];
                 ssize[i] = gl(hdr + 8 + 4 * i);
         text = ssize[0];                        /* SHRI */
         data = ssize[3] + ssize[4];             /* SHRD + PRVD */
-        if (text > DATAAT || data > ROMSIZE - DATAAT)
+        if (text > DATAAT || data > ROMSIZE - CFGSIZE - DATAAT)
                 fail("bootfix: image too big\n");
         if ((out = creat(argv[2], 0644)) < 0)
                 fail("bootfix: cannot create\n");

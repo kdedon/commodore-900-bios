@@ -19,6 +19,8 @@ extern        mmuwrite();
 unsigned mgot;                  /* word read at a failure */
 unsigned mwant;                 /* and the word expected */
 #if ROMKB > 32
+extern char skipmem;
+static char quick;              /* Space: size only */
 char    segok[32];              /* tested good, one bit per 64 KB segment */
 char    segbad[32];             /* failed above the video holes */
 #endif
@@ -36,10 +38,21 @@ unsigned low, hi;               /* RAM span, 1 KB clicks */
 
         top = hi - WINDOW;
         kb = 0;
+#if ROMKB > 32
+        outstr("\rPress C for setup, Space to skip the memory test\n");
+        quick = skipmem;
+#endif
         for (seg = low >> 6; (seg << 6) < top; seg++) {
                 n = top - (seg << 6);
                 if (n > 64)
                         n = 64;
+#if ROMKB > 32
+                quick |= setkey();
+                if (quick) {
+                        kb += n;
+                        continue;
+                }
+#endif
                 if ((off = mtest(seg, n)) != 0) {
                         bad(seg, off - 2, mwant);
                         return;
@@ -157,7 +170,8 @@ unsigned kb;
         for (seg = 0x38; seg <= 0xfe; seg++) {
                 if ((fit[seg >> 3] & 1 << (seg & 7)) == 0)
                         continue;
-                if (*look(seg) != seg || mtest(SCRATCH, 64) != 0) {
+                quick |= setkey();
+                if (*look(seg) != seg || !quick && mtest(SCRATCH, 64) != 0) {
                         SETBIT(segbad, seg);
                         continue;
                 }
