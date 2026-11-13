@@ -4,7 +4,7 @@
  */
 
 #define CHUNK   8192
-#define NCHUNK  4               /* 4 x 8K = the 32K image */
+#define NCHUNK  (int)(ROMSIZE / CHUNK)
 
 char    chunk[CHUNK];
 char    hi[CHUNK / 2];

@@ -8,6 +8,7 @@
 /*.o
 /*.i
 /rom
+/rom.out
 /rom.H
 /rom.L
 /bootfix

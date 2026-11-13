@@ -89,11 +89,13 @@ free under its 0x4000 cap.
      are free, so it doesn't fit as-is.  The C900 session is deciding
      how to make room with the user.  The emulator also needs the larger
      ROM.
-   - **The ROM must also run from a 32 KB pair**, where the upper half
-     mirrors the lower.  Detect which by comparing a word at 0x0000 with
-     0x8000 (place a distinct signature there).  On a 32 KB part, extras
-     in the upper half (net boot, setup menu) are reported unavailable
-     and the core BIOS still runs.
+   - **Two builds, not runtime detection.**  The default is 64 KB, with
+     data at 0xE000.  `make ROMSIZE=0x8000L ROMDATA=0x6c40` builds for a
+     32 KB pair, and features that don't fit are left out of that build.
+     A 64 KB image can't be put on 32 KB parts anyway.
+   - **Emulator:** `commodore-900-emulator` branch `rom64` (ae91510)
+     decodes 64 KB and mirrors a 32 KB pair.  CI builds the 32 KB variant
+     until DEPS pins a release with it.
 
 ## 2. Hardware inventory: video
 

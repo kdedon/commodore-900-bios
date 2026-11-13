@@ -36,6 +36,10 @@ concurrency:
 permissions:
   contents: read
 
+# The pinned emulator decodes a 32 KB ROM, so CI builds that variant.
+env:
+  MAKEFLAGS: ROMSIZE=0x8000L ROMDATA=0x6c40
+
 jobs:
   rom:
     runs-on: ubuntu-latest

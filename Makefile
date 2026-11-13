@@ -17,13 +17,16 @@ RUN=
 
 # Data sits at ROMDATA in the image.  Reset copies it up to ldrbuf, which
 # must stay the last initialised object (porttest.o links last).
-LAYOUT=-DROMSIZE=0x8000 -DROMDATA=0x6c40
+# A 32 KB part: make ROMSIZE=0x8000L ROMDATA=0x6c40
+ROMSIZE=0x10000L
+ROMDATA=0xe000
+LAYOUT=-DROMSIZE=$(ROMSIZE) -DROMDATA=$(ROMDATA)
 
 OPTIONS=-DZ8000HR -DFIVEINCH=1 -DDDT -DAUTOBOOT
 CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
   -DBUFPADDR="(0x8000400L)"
 CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) -I/usr/sys/z8001/h
-LD=$(LDBIN) -i -R 0x00000000 -o rom
+LD=$(LDBIN) -i -R 0x00000000 -o rom.out
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
   ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
   porttest.o
@@ -34,15 +37,15 @@ OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
 # host they need the runner too -- which is what $(RUN) is.
 rom: $(OBJECTS) font.o bootfix
 	$(LD) $(OBJECTS) $(LIB) font.o
-	$(RUN) ./bootfix rom
+	$(RUN) ./bootfix rom.out rom
 
 split: rom prom
 	$(RUN) ./prom rom
 
 bootfix: bootfix.c Makefile
 	$(CCBIN) -o bootfix $(LAYOUT) -I/usr/sys/z8001/h bootfix.c
-prom: prom.c
-	$(CCBIN) -o prom -I/usr/sys/z8001/h prom.c
+prom: prom.c Makefile
+	$(CCBIN) -o prom $(LAYOUT) -I/usr/sys/z8001/h prom.c
 
 font.o: font.s
 	$(ASBIN) -go font.o font.s
@@ -98,4 +101,4 @@ porttest.o: porttest.c cioports.h
 	$(CC) porttest.c
 
 clean:
-	rm -f *.o *.i rom rom.H rom.L bootfix prom
+	rm -f *.o *.i rom rom.out rom.H rom.L bootfix prom

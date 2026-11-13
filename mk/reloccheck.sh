@@ -17,7 +17,7 @@ C900_ROOT=$root
 . "$root/mk/emulator.sh"
 emu_need "boot the relinked ROM"
 
-PAD=${PAD:-16}
+PAD=${PAD:-256}
 # Objects whose contents only look like text addresses.
 ALLOW=${ALLOW:-dbgfmt hrfont}
 mwc=$root/mk/mwc1985
@@ -86,8 +86,7 @@ for kind, o, v in bad:
 sys.exit(1 if bad else 0)
 EOF
 
-cp build/reloc/b.out build/reloc/rom
-(cd build/reloc && sh "$mwc/run" ../../bootfix rom >/dev/null && sh "$mwc/run" ../../prom rom >/dev/null)
+(cd build/reloc && sh "$mwc/run" ../../bootfix b.out rom >/dev/null && sh "$mwc/run" ../../prom rom >/dev/null)
 
 # A blank disk fails autoboot; "19" at the boot prompt enters the monitor.
 fw=$work/fw
