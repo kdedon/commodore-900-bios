@@ -19,22 +19,22 @@ char   *fdspec = "(fd,1)coherent"; /* floppy auto-boot spec */
 char   *hdspec = "(hd)coherent";   /* hard disk auto-boot spec */
 char    quiet = 0;              /* suppress boot errors */
 char    *msgs[] = {
-        "Command        Function\n",
-        "---------------------------------------------------------\n",
-        "(hd)file       boot <file> from the Commodore hard disk\n",
-        "(fd)file       boot <file> from the Commodore floppy disk\n",
-        "l              toggle load/boot switch\n",
-        "m              display RAM configuration\n",
-        "FF<unit>       format Commodore Floppy disk <unit>\n",
-        "d              run debugger\n",
-        "S <n>          set hard disk parameters to type <n>\n",
-        "P <unit>       park hard disk <unit> heads over shipping zone\n",
+        "Command          Function\n",
+        "-----------------------------------------------------------\n",
+        "(hd)file         boot <file> from the Commodore hard disk\n",
+        "(fd)file         boot <file> from the Commodore floppy disk\n",
+        "l                toggle load/boot switch\n",
+        "m                display RAM configuration\n",
+        "FF<unit>         format Commodore Floppy disk <unit>\n",
+        "d                run debugger\n",
+        "S <n>            set hard disk parameters to type <n>\n",
+        "P <unit>         park hard disk <unit> heads over shipping zone\n",
 #if ROMKB > 32
-        "(sx,n)         boot a file sent by XMODEM to serial port n\n",
+        "(sx,n)           boot a file sent by XMODEM to serial port n\n",
         "(sl,n)[ip:]file  boot file by TFTP over SLIP on serial port n\n",
-        "(le)[ip:]file  boot file by TFTP over the network card\n",
-        "n              show the network card\n",
-        "t [n]          terminal on serial port n (Ctrl-] q quits)\n",
+        "(le)[ip:]file    boot file by TFTP over the network card\n",
+        "n                show the network card\n",
+        "t [n]            terminal on serial port n (Ctrl-] q quits)\n",
 #endif
         "\n",
 };
