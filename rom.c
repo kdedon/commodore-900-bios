@@ -4,6 +4,7 @@
  */
 #include "romconf.h"
 #include "ddtvars.h"
+#include "version.h"
 
 typedef long addr_t;
 
@@ -366,7 +367,13 @@ usage()
 {
         register char **cp;
 
+#if ROMKB > 32
+        puts("\nCommodore C900 Monitor V");
+        puts(VERSION);
+        putchar('\n');
+#else
         puts("\nCommodore C900 Monitor V0.0\n");
+#endif
         for (cp = msgs; cp < &msgs[(sizeof(msgs) / sizeof(msgs[0]))]; cp++)
                 puts(*cp);
 }

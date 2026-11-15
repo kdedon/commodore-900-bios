@@ -54,7 +54,7 @@ font.o: font.s
 
 rom.o boot.o conf.o sio.o hd.o wd.o lceddt.o porttest.o memtest.o: romconf.h ddtvars.h rom.h Makefile
 
-rom.o: rom.c
+rom.o: rom.c version.h
 	$(CC) rom.c
 trap.o: trap.c
 	$(CC) trap.c
@@ -85,8 +85,10 @@ hrc.o: hrc.s Makefile
 	rm -f hrc.i
 io.o: io.s
 	$(ASBIN) -go io.o io.s
-ramtest.o: ramtest.s
-	$(ASBIN) -go ramtest.o ramtest.s
+ramtest.o: ramtest.s version.h
+	$(CPPBIN) -E ramtest.s >ramtest.i
+	$(ASBIN) -go ramtest.o ramtest.i
+	rm -f ramtest.i
 mbittest.o: mbittest.s
 	$(ASBIN) -go mbittest.o mbittest.s
 loadseg.o: loadseg.s
@@ -120,5 +122,11 @@ term.o: term.c romconf.h rom.h ddtvars.h Makefile
 porttest.o: porttest.c cioports.h
 	$(CC) porttest.c
 
+# A host build writes version.h from git (mk/version.sh); without git,
+# VERSION and today.
+version.h:
+	echo '#define VERSION "'`cat VERSION`'"' >version.h
+	echo '#define VDATE "'`date +%m/%d/%y`'"' >>version.h
+
 clean:
-	rm -f *.o *.i rom rom.out rom.H rom.L bootfix prom
+	rm -f *.o *.i rom rom.out rom.H rom.L bootfix prom version.h

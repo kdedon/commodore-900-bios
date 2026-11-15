@@ -109,10 +109,15 @@ contab:
 / conlen -- contab byte count word.  (local symbol).
 conlen:
 	.byte	0x00, 0x2a
-/ banner -- "\r\nCommodore C900 diagnostics V1.0 (6/14/85)\r\nMemory test: "
+#include "version.h"
+/ banner -- "\r\nCommodore C900 diagnostics V<version> (<date>)\r\nMemory test: "
 banner:
 	.byte	0x0d, 0x0a
-	.ascii	"Commodore C900 diagnostics V1.0 (6/14/85)"
+	.ascii	"Commodore C900 diagnostics V"
+	.ascii	VERSION
+	.ascii	" ("
+	.ascii	VDATE
+	.ascii	")"
 	.byte	0x0d, 0x0a
 	.ascii	"Memory test: "
 	.byte	0x00

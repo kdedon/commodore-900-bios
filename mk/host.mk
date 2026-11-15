@@ -38,7 +38,11 @@ TOOLS = CCBIN='sh $(MWC)/cc' ASBIN='sh $(MWC)/as' LDBIN='sh $(MWC)/ld' \
 
 .PHONY: rom split check boot-check reloc-check abi-check serial-check net-check stage deps clean
 
-rom split clean:
+rom split:
+	sh $(ROOT)/mk/version.sh
+	$(MAKE) -C $(ROOT) $(TOOLS) $@
+
+clean:
 	$(MAKE) -C $(ROOT) $(TOOLS) $@
 
 stage:

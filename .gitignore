@@ -13,6 +13,7 @@
 /rom.L
 /bootfix
 /prom
+/version.h
 
 # The staged 1985 guest root (mk/1985root.sh) and anything `make deps' places.
 /build/
