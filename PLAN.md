@@ -569,12 +569,6 @@ The C900 becomes a dumb terminal to another machine on any SCC channel.
 
 ### 8.3 Hardware coverage
 
-- **RGBI console on HR.** When 404H bits 1:0 are 1, draw start-up and
-  monitor text in the 640x400x4 layout (4 pixels a word, row stride 320
-  bytes, row 204 crosses 3E/3F). Today the mono layout scrambles it.
-  Follows kernel3's colour console (hrctty) and shares its 8x16 font and
-  drawing; kboot needs the same.
-
 - **Mouse and keyboard test** in diagnostics: show the HR mouse X and
   buttons from 404H/406H live, and keycodes as pressed.
 - **Video test patterns** per board: a grid, all-on, and a character set.

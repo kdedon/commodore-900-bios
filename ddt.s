@@ -61,6 +61,12 @@ altput_:
 / avidchr -- alternate-console bitmap character renderer body (VRAM
 / segs 0x3a/0x3b, font glyphs from hrfont_).
 avidchr_:
+#if ROMKB > 32
+	in	r0, 0x0404
+	and	r0, $3
+	cp	r0, $1		/ the colour board
+	jp	z, cvidchr_
+#endif
 	clr	r0
 	cpl	rr12, $0x3a000000
 	jr	nz, chrloop

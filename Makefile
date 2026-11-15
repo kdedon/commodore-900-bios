@@ -30,7 +30,7 @@ CONFIG=-DRAMBASE=0x08000000 -DCMDBLKPADDR="(0x8000000L)"\
 CC=$(CCBIN) -c $(OPTIONS) $(CONFIG) $(LAYOUT) -I/usr/sys/z8001/h
 LD=$(LDBIN) -i -R 0x00000000 -o rom.out
 OBJECTS=crt.o rom.o ramtest.o sio.o hd.o wd.o boot.o diag.o trap.o conf.o\
-  ddt.o hires.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
+  ddt.o hires.o hrc.o io.o loadseg.o lceddt.o mbittest.o diagdisp.o memtest.o\
   tick.o setup.o xmodem.o net.o cardrom.o term.o porttest.o
 
 # bootfix flattens the linked l.out to the 32K ROM image in place;
@@ -75,10 +75,14 @@ crt.o: lkcrt.s Makefile
 	$(CPPBIN) -E -DDDT -DRAMBASE=0x08000000 $(LAYOUT) lkcrt.s >crt.i
 	$(ASBIN) -go crt.o crt.i
 	rm -f crt.i
-ddt.o: ddt.s
-	$(CPPBIN) -E -DDDT -DRAMBASE=0x08000000 ddt.s >ddt.i
+ddt.o: ddt.s Makefile
+	$(CPPBIN) -E -DDDT -DRAMBASE=0x08000000 $(LAYOUT) ddt.s >ddt.i
 	$(ASBIN) -go ddt.o ddt.i
 	rm -f ddt.i
+hrc.o: hrc.s Makefile
+	$(CPPBIN) -E $(LAYOUT) hrc.s >hrc.i
+	$(ASBIN) -go hrc.o hrc.i
+	rm -f hrc.i
 io.o: io.s
 	$(ASBIN) -go io.o io.s
 ramtest.o: ramtest.s
