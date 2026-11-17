@@ -71,6 +71,20 @@ jobs:
           C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
         run: make -f mk/host.mk boot-check
 
+      # The same sources at 32 KB, for a pair of the original 16 KB parts.
+      - name: The 32 KB halves
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+          MAKEFLAGS: ROMKB=32 ROMDATA=0x6cf0
+        run: |
+          mkdir -p out
+          mv rom.H rom.L out/
+          make -f mk/host.mk clean
+          make -f mk/host.mk split boot-check
+          mv rom.H rom32.H
+          mv rom.L rom32.L
+          mv out/rom.H out/rom.L .
+
       # The halves are named as the programmer wants them: rom.H is the even
       # bytes, rom.L the odd ones.  Both, or neither -- one half of an EPROM
       # pair is not a release.
@@ -80,5 +94,7 @@ jobs:
           files: |
             rom.H
             rom.L
+            rom32.H
+            rom32.L
           body: ${{ steps.cc.outputs.notes }}
           fail_on_unmatched_files: true

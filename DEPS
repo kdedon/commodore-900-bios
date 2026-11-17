@@ -35,4 +35,4 @@
 # The image is large, private and in no repository; vendor/ is the path that
 # works anywhere.
 
-emu      release  https://github.com/kdedon/commodore-900-emulator   v0.1        c900-@REF@-@HOST@
+emu      release  https://github.com/kdedon/commodore-900-emulator   v0.4        c900-@REF@-@HOST@

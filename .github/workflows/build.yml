@@ -36,13 +36,18 @@ concurrency:
 permissions:
   contents: read
 
-# The pinned emulator decodes a 32 KB ROM, so CI builds that variant.
-env:
-  MAKEFLAGS: ROMKB=32 ROMDATA=0x6cf0
-
 jobs:
   rom:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - kb: 64
+            flags: ''
+          - kb: 32
+            flags: ROMKB=32 ROMDATA=0x6cf0
+    env:
+      MAKEFLAGS: ${{ matrix.flags }}
     steps:
       - uses: actions/checkout@v4
 
@@ -74,24 +79,33 @@ jobs:
         run: make -f mk/host.mk boot-check
 
       - name: Check the service table
+        if: matrix.kb == 64
         env:
           C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
         run: make -f mk/host.mk abi-check
 
       - name: Boot it with the code shifted
+        if: matrix.kb == 64
         env:
           C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
         run: make -f mk/host.mk reloc-check
+
+      - name: Boot over serial and SLIP
+        if: matrix.kb == 64
+        env:
+          C900_EMU: ${{ github.workspace }}/deps/commodore-900-emulator/bin/c900
+        run: make -f mk/host.mk serial-check net-check
 
       # The halves, off every green push: a stranger should not have to build a
       # 1985 toolchain to get an EPROM image.
       - uses: actions/upload-artifact@v4
         with:
-          name: rom
+          name: rom-${{ matrix.kb }}
           path: |
             rom.H
             rom.L
             build/romabi.h
+          if-no-files-found: ignore
 
       - name: The link map, when it does not build
         if: failure()
