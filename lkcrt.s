@@ -421,3 +421,19 @@ trapcom:
 	ldm	r0, @rr14, $14
 	add	r15, $0x0022
 	iret
+
+/ ----------------------------------------------------------------------------
+/ V1.0 entry points, for programs that call the ROM at fixed offsets.
+/ ----------------------------------------------------------------------------
+#if ROMKB > 32
+	.blkb	0x0900 - [. - psa]
+	jp	puts_
+	.blkb	0x0fc2 - [. - psa]
+	jp	putchar_
+	.blkb	0x104a - [. - psa]
+	jp	getchar_
+	.blkb	0x111e - [. - psa]
+	jp	wdgo_
+	.blkb	0x11a6 - [. - psa]
+	jp	wdread_
+#endif

@@ -57,6 +57,10 @@ for n, name in enumerate(svc):
         err.append('slot %d is not a long jp' % n)
     elif (slot[4] << 8 | slot[5]) != syms.get(name):
         err.append('slot %d does not reach %s' % (n, name))
+for a, name in ((0x0900, 'puts'), (0x0fc2, 'putchar'), (0x104a, 'getchar'),
+                (0x111e, 'wdgo'), (0x11a6, 'wdread')):
+    if t[a:a + 4] != b'\x5e\x08\x80\x00' or (t[a + 4] << 8 | t[a + 5]) != syms.get(name):
+        err.append('V1.0 entry %x does not reach %s' % (a, name))
 for e in err:
     print('abicheck: ' + e)
 if err:

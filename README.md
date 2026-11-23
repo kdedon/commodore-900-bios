@@ -69,6 +69,22 @@ from live in the last 16 bytes of a 64 KB image and are set on a host:
 `--boot` is `fd-hd`, `hd`, `fd` or `monitor`; `--wait` is how long, in
 tenths of a second, the ROM waits for C after the tests.
 
+## ROM calls
+
+Programs call the ROM through the service table at 00:029E, magic
+`C9JT`; `make -f mk/host.mk abi-check` writes its header,
+`build/romabi.h`.  The 64 KB image also keeps the V1.0 entry points:
+
+| Routine | Offset |
+|---------|--------|
+| puts    | 0x0900 |
+| putchar | 0x0fc2 |
+| getchar | 0x104a |
+| wdgo    | 0x111e |
+| wdread  | 0x11a6 |
+
+The 32 KB image has no room for them: use the table.
+
 ## Serial boot
 
 `(sx,n)` at the monitor prompt receives a load module by XMODEM (CRC or

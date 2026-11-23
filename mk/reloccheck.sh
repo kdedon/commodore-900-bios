@@ -19,7 +19,7 @@ emu_need "boot the relinked ROM"
 
 PAD=${PAD:-256}
 # Objects whose contents only look like text addresses.
-ALLOW=${ALLOW:-dbgfmt hrfont msg_rparen}
+ALLOW=${ALLOW:-dbgfmt hrfont cfont msg_rparen devs}
 mwc=$root/mk/mwc1985
 work=$root/build/reloc
 rm -rf "$work"

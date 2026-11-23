@@ -330,6 +330,11 @@ struct dinode *dip;
         if (hdf || fdf)
                 s += 0x100;
         o = 0;
+#if ROMKB > 32
+        if (lp->l_ssize[L_SHRI] + lp->l_ssize[L_PRVI] + lp->l_ssize[L_BSSI] > 0x10000L
+            || lp->l_ssize[L_SHRD] + lp->l_ssize[L_PRVD] + lp->l_ssize[L_BSSD] > 0x10000L)
+                return ("image space over 64K");
+#endif
         bds = lp->l_ssize[L_BSSD];
         bis = lp->l_ssize[L_BSSI];
         is = lp->l_ssize[L_SHRI] + lp->l_ssize[L_PRVI];
@@ -340,7 +345,7 @@ struct dinode *dip;
                 return ("image too big for serial boot");
 #endif
         /* BSSI + roundup to 512-byte click boundary */
-        bis += 1024 - (bis+is)%1024;
+        bis += -(bis+is) & 1023;
 #if      LADDR
         i = fload(&s, &o, lp->l_tbase, is, bis);
 #else
@@ -349,7 +354,7 @@ struct dinode *dip;
         if (i < 0 || fload(&s, &o, i, ds, bds) < 0)
                 return (rderr);
         data = code;
-        data += ((bis+is+1023)&~1023)>>8;
+        data += ((long)bis + is) >> 8;
         /*
          * this really ugly code handles the case where the command
          * block for the Western Digital controller is fixed at the
